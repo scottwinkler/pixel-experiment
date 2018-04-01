@@ -1,23 +1,18 @@
 package main
 
 import (
+	"fmt"
 	_ "image/png"
-	"math/rand"
 	"time"
+
+	"github.com/scottwinkler/pixel-experiment/player"
+	"github.com/scottwinkler/pixel-experiment/spritesheet"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/scottwinkler/pixel-experiment/tilemap"
 	"golang.org/x/image/colornames"
 )
-
-type Tile struct {
-	sprite *pixel.Sprite
-	matrix pixel.Matrix
-}
-
-type Tileset struct {
-	tiles []Tile
-}
 
 func run() {
 	cfg := pixelgl.WindowConfig{
@@ -29,58 +24,49 @@ func run() {
 	if err != nil {
 		panic(err)
 	}
-
-	tileSpritesheet := loadSpritesheet("spritesheets/minecraft_tiles.png", 80, 80)
-	batch := pixel.NewBatch(&pixel.TrianglesData{}, tileSpritesheet.picture)
+	tm, err := tilemap.ParseTiledJSON("assets/tmx/world2.json")
+	tm.MakeWorld()
+	spritesheet := spritesheet.LoadSpritesheet("assets/spritesheets/baldricSlashSheet.png", 64, 64)
+	player := player.NewPlayer(0, spritesheet)
+	fmt.Printf("len: %d", len(spritesheet.Sprites))
 	var (
 		camPos   = pixel.ZV
-		camSpeed = 10.0
+		camSpeed = 1.0
 		camZoom  = 1.0
-		tiles    []Tile
+		//tiles    []Tile
 	)
 
 	last := time.Now()
-	for x := 0; x < int(win.Bounds().Max.X); x += 80 {
-		for y := 0; y < int(win.Bounds().Max.Y); y += 80 {
-
-			sprite := tileSpritesheet.sprites[rand.Intn(len(tileSpritesheet.sprites))]
-			pos := pixel.V(float64(x), float64(y))
-			matrix := pixel.IM.Scaled(pixel.ZV, 1).Moved(pos)
-			tile := Tile{sprite: sprite, matrix: matrix}
-			tiles = append(tiles, tile)
-		}
-	}
 
 	for !win.Closed() {
 		dt := time.Since(last).Seconds()
 
 		cam := pixel.IM.Scaled(camPos, camZoom).Moved(win.Bounds().Center().Sub(camPos))
 		win.SetMatrix(cam)
-		/*if win.JustPressed(pixelgl.MouseButtonLeft) {
-			tile := pixel.NewSprite(spritesheet, tileFrames[rand.Intn(len(tileFrames))])
-			tiles = append(tiles, tile)
-			mouse := cam.Unproject(win.MousePosition())
-			matrices = append(matrices, pixel.IM.Scaled(pixel.ZV, 4).Moved(mouse))
-		}*/
 
 		if win.Pressed(pixelgl.KeyLeft) {
 			camPos.X -= camSpeed * dt
+			player.SetFrame(2)
 		}
 		if win.Pressed(pixelgl.KeyRight) {
 			camPos.X += camSpeed * dt
+			player.SetFrame(0)
 		}
 		if win.Pressed(pixelgl.KeyDown) {
 			camPos.Y -= camSpeed * dt
+			player.SetFrame(1)
 		}
 		if win.Pressed(pixelgl.KeyUp) {
 			camPos.Y += camSpeed * dt
+			player.SetFrame(3)
 		}
-		win.Clear(colornames.White)
-		batch.Clear()
-		for i, tile := range tiles {
-			tile.sprite.Draw(batch, tiles[i].matrix)
-		}
-		batch.Draw(win)
+		win.Clear(colornames.Black)
+		//batch.Clear()
+		tm.Draw(win)
+		//spritesheet.Sprites[0].Draw(win, pixel.IM)
+		player.Draw(win)
+		win.SetTitle(cam.Unproject(win.MousePosition()).String())
+		//batch.Draw(win)
 		win.Update()
 	}
 }

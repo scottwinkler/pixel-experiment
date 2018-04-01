@@ -1,3 +1,1 @@
-go install
-mv ~/go/bin/pixel .
-./pixel
+go install && ~/go/bin/pixel-experiment
