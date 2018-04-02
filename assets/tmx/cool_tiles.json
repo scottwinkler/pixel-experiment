@@ -1,0 +1,12 @@
+{ "columns":23,
+ "image":"..\/..\/..\/..\/..\/..\/..\/Downloads\/32x32_map_tile v3.1 [MARGINLESS].png",
+ "imageheight":928,
+ "imagewidth":736,
+ "margin":0,
+ "name":"32x32_map_tile_v3.1",
+ "spacing":0,
+ "tilecount":667,
+ "tileheight":32,
+ "tilewidth":32,
+ "type":"tileset"
+}

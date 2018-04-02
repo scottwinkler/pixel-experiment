@@ -48,7 +48,6 @@ func (Tile) ContainsPoint(x int, y int) bool {
 */
 func (tile *Tile) Draw(t pixel.Target) {
 	if tile.Sprite != nil {
-		//fmt.Printf("drawing tile@ x:%d,y:%d", tile.X, tile.Y)
 		tile.Sprite.DrawColorMask(t, tile.Matrix, tile.Alpha)
 	}
 }

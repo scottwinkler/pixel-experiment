@@ -2,7 +2,6 @@ package tilemap
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"math"
 	"strconv"
@@ -41,15 +40,15 @@ const TMX_DIR = "assets/tmx/"
 //fetchs the rest of the tileset data
 //todo: allow it to read from sets of images, not just a single image. Will need to change the datastructure of TilesetData to allow this
 func (ts *Tileset) FetchTilesetData() {
-	fmt.Println("reading data source file")
-	fmt.Println(TMX_DIR + ts.Source)
+	//fmt.Println("reading data source file")
+	//fmt.Println(TMX_DIR + ts.Source)
 	raw, err := ioutil.ReadFile(TMX_DIR + ts.Source)
 	if err != nil {
 		panic(err)
 	}
 	var tilesetData TilesetData
 	json.Unmarshal(raw, &tilesetData)
-	fmt.Println(TMX_DIR + tilesetData.Image)
+	//fmt.Println(TMX_DIR + tilesetData.Image)
 	pic, err := utility.LoadPicture(TMX_DIR + tilesetData.Image)
 	if err != nil {
 		panic(err)

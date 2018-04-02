@@ -41,7 +41,9 @@ func (layer *TilemapLayer) MakeTiles(tm *Tilemap) *TilemapLayer {
 
 				if tileset.Contains(gid) {
 					//fmt.Printf("gid: %d in tileset", gid)
-					sprite = tileset.GetSpriteForGid(gid)
+					if layer.Visible { //necessary to hide collision tiles
+						sprite = tileset.GetSpriteForGid(gid)
+					}
 					properties = tileset.GetPropertiesForGid(gid)
 					break
 				}
