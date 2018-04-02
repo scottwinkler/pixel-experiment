@@ -2,7 +2,9 @@ package tilemap
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"math"
 	"strconv"
 
 	"github.com/faiface/pixel"
@@ -37,32 +39,34 @@ type TilesetData struct {
 const TMX_DIR = "assets/tmx/"
 
 //fetchs the rest of the tileset data
-func (ts Tileset) FetchTilesetData() Tileset {
-	//fmt.Println("reading data source file")
+//todo: allow it to read from sets of images, not just a single image. Will need to change the datastructure of TilesetData to allow this
+func (ts *Tileset) FetchTilesetData() {
+	fmt.Println("reading data source file")
+	fmt.Println(TMX_DIR + ts.Source)
 	raw, err := ioutil.ReadFile(TMX_DIR + ts.Source)
 	if err != nil {
 		panic(err)
 	}
 	var tilesetData TilesetData
 	json.Unmarshal(raw, &tilesetData)
-
+	fmt.Println(TMX_DIR + tilesetData.Image)
 	pic, err := utility.LoadPicture(TMX_DIR + tilesetData.Image)
 	if err != nil {
 		panic(err)
 	}
 	tilesetData.Picture = &pic
 	ts.TilesetData = tilesetData
-	ts.LastGid = ts.FirstGid + tilesetData.TileCount
+	ts.LastGid = ts.FirstGid + tilesetData.TileCount - 1
 	//fmt.Printf("%+v\n", ts)
-	return ts
+	//return ts
 }
 
 //returns true if the specified gid is in the tileset
-func (ts Tileset) Contains(gid int) bool {
+func (ts *Tileset) Contains(gid int) bool {
 	return gid >= ts.FirstGid && gid <= ts.LastGid
 }
 
-func (ts Tileset) GetPropertiesForGid(gid int) map[string]interface{} {
+func (ts *Tileset) GetPropertiesForGid(gid int) map[string]interface{} {
 	var properties map[string]interface{}
 	value := ts.TilesetData.Properties[strconv.Itoa(gid)]
 	if value != nil {
@@ -72,12 +76,13 @@ func (ts Tileset) GetPropertiesForGid(gid int) map[string]interface{} {
 }
 
 //returns a sprite for a specified gid
-func (ts Tileset) GetSpriteForGid(gid int) *pixel.Sprite {
+func (ts *Tileset) GetSpriteForGid(gid int) *pixel.Sprite {
 	pic := ts.TilesetData.Picture
 	pd := pixel.PictureDataFromPicture(*pic)
 	index := gid - ts.FirstGid
-	col := index % ts.TilesetData.Columns
-	row := (index - col) / ts.TilesetData.Columns
+	col := (index % ts.TilesetData.Columns) //if index=0 then i am in col=0
+	//fmt.Printf("inter value: %d", int(math.Ceil((float64(index)+1)/float64(ts.TilesetData.Columns)))-1)
+	row := int(math.Ceil((float64(index)+1)/float64(ts.TilesetData.Columns))) - 1 //if index=0 then i am in row=0
 	//fmt.Printf("index: %d, col: %d,row: %d", index, col, row)
 	minX := pd.Bounds().Min.X + float64(col*ts.TilesetData.TileWidth)
 	maxX := minX + float64(ts.TilesetData.TileWidth)

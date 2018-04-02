@@ -14,10 +14,11 @@ type Tile struct {
 	Sprite       *pixel.Sprite
 	Matrix       pixel.Matrix
 	Properties   map[string]interface{}
+	Alpha        pixel.RGBA
 }
 
 // NewTile creates a Tile from the
-func NewTile(layer *TilemapLayer, x int, y int, width int, height int, sprite *pixel.Sprite, matrix pixel.Matrix, properties map[string]interface{}) Tile {
+func NewTile(layer *TilemapLayer, x int, y int, width int, height int, sprite *pixel.Sprite, matrix pixel.Matrix, properties map[string]interface{}) *Tile {
 	isCollidable := false
 	if properties != nil {
 		value := properties["collidable"]
@@ -35,8 +36,9 @@ func NewTile(layer *TilemapLayer, x int, y int, width int, height int, sprite *p
 		Matrix:       matrix,
 		Properties:   properties,
 		IsCollidable: isCollidable,
+		Alpha:        pixel.Alpha(layer.Opacity),
 	}
-	return tile
+	return &tile
 }
 
 /*
@@ -47,6 +49,6 @@ func (Tile) ContainsPoint(x int, y int) bool {
 func (tile *Tile) Draw(t pixel.Target) {
 	if tile.Sprite != nil {
 		//fmt.Printf("drawing tile@ x:%d,y:%d", tile.X, tile.Y)
-		tile.Sprite.Draw(t, tile.Matrix)
+		tile.Sprite.DrawColorMask(t, tile.Matrix, tile.Alpha)
 	}
 }

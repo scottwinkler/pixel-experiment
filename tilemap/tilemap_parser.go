@@ -21,8 +21,10 @@ func ParseTiledJSON(path string) (Tilemap, error) {
 	}
 	var new_tilesets []Tileset
 	for _, tileset := range tilemap.Tilesets {
-		new_tilesets = append(new_tilesets, tileset.FetchTilesetData())
+		tileset.FetchTilesetData()
+		new_tilesets = append(new_tilesets, tileset)
 	}
 	tilemap.Tilesets = new_tilesets
+	tilemap.MakeTiles()
 	return tilemap, nil
 }

@@ -5,15 +5,15 @@ import (
 )
 
 type TilemapLayer struct {
-	Data    []int  `json:"data"`
-	Name    string `json:"name"`
-	X       int    `json:"x"`
-	Y       int    `json:"y"`
-	Width   int    `json:"width"`  //number of tiles wide
-	Height  int    `json:"height"` //number of tiles high
-	Alpha   int    `json:"opacity"`
-	Visible bool   `json:"visible"`
-	Tiles   []Tile
+	Data    []int   `json:"data"`
+	Name    string  `json:"name"`
+	X       int     `json:"x"`
+	Y       int     `json:"y"`
+	Width   int     `json:"width"`  //number of tiles wide
+	Height  int     `json:"height"` //number of tiles high
+	Opacity float64 `json:"opacity"`
+	Visible bool    `json:"visible"`
+	Tiles   []*Tile
 	Tilemap *Tilemap
 }
 
@@ -22,7 +22,7 @@ func (layer *TilemapLayer) MakeTiles(tm *Tilemap) *TilemapLayer {
 	layer.Tilemap = tm
 	tileHeight := tm.TileHeight
 	tileWidth := tm.TileWidth
-	var tiles []Tile
+	var tiles []*Tile
 	index := 0
 	for col := 0; col < layer.Width; col++ {
 		for row := 0; row < layer.Height; row++ {
@@ -32,7 +32,7 @@ func (layer *TilemapLayer) MakeTiles(tm *Tilemap) *TilemapLayer {
 			var sprite *pixel.Sprite
 			var matrix pixel.Matrix = pixel.IM.Moved(pixel.V(float64(x), float64(y)))
 			var properties map[string]interface{}
-			var tile Tile
+			var tile *Tile
 			for _, tileset := range tm.Tilesets {
 				gid := layer.Data[index]
 				if gid < 1 { //quit early

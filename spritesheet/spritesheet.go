@@ -10,11 +10,11 @@ import (
 
 type Spritesheet struct {
 	Sprites  []*pixel.Sprite
-	Pictures []*pixel.Picture
+	Pictures []*pixel.Picture //typically do not need this
 }
 
 //parse a spritesheet based on a standard width and height
-func LoadSpritesheet(path string, frameWidth int, frameHeight int) Spritesheet {
+func LoadSpritesheet(path string, frameWidth int, frameHeight int) *Spritesheet {
 	parts := strings.Split(path, ".")
 	ext := parts[len(parts)-1]
 	var sprites []*pixel.Sprite
@@ -43,7 +43,7 @@ func LoadSpritesheet(path string, frameWidth int, frameHeight int) Spritesheet {
 		}
 	}
 	fmt.Printf("len: %d", len(sprites))
-	return Spritesheet{Sprites: sprites, Pictures: pics}
+	return &Spritesheet{Sprites: sprites, Pictures: pics}
 }
 
 //gifs will have more than one picture

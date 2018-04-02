@@ -15,7 +15,7 @@ type Tilemap struct {
 	Tilesets    []Tileset      `json:"tilesets"`
 }
 
-func (tm *Tilemap) MakeWorld() {
+func (tm *Tilemap) MakeTiles() {
 	var new_layers []TilemapLayer
 	for _, layer := range tm.Layers {
 		new_layers = append(new_layers, *layer.MakeTiles(tm))
