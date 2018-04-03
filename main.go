@@ -5,37 +5,20 @@ import (
 	"time"
 
 	"github.com/scottwinkler/pixel-experiment/animation"
+	"github.com/scottwinkler/pixel-experiment/world"
 
 	"github.com/scottwinkler/pixel-experiment/player"
 	"github.com/scottwinkler/pixel-experiment/spritesheet"
 
-	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/scottwinkler/pixel-experiment/tilemap"
 	"golang.org/x/image/colornames"
 )
 
 func run() {
-	cfg := pixelgl.WindowConfig{
-		Title:  "Pixel Rocks!",
-		Bounds: pixel.R(0, 0, 800, 800),
-		VSync:  true,
-	}
-	win, err := pixelgl.NewWindow(cfg)
-	if err != nil {
-		panic(err)
-	}
-	tm, err := tilemap.ParseTiledJSON("assets/tmx/world3.json")
-	//tm.MakeWorld()
-	//world := world.NewWorld()
-	//world.SetTilemap(tm)
-	/*spritesheet := spritesheet.LoadSpritesheet("assets/spritesheets/baldricSlashSheet.png", 64, 64)
-	var animations []*animation.Animation
-	animations = append(animations, animation.NewAnimation(spritesheet, "WalkRight", []int{0, 4, 8, 12, 16, 20, 16, 12, 8, 4, 0}, true))
-	animations = append(animations, animation.NewAnimation(spritesheet, "WalkDown", []int{1, 5, 9, 13, 17, 21, 17, 13, 9, 5, 1}, true))
-	animations = append(animations, animation.NewAnimation(spritesheet, "WalkLeft", []int{2, 6, 10, 14, 18, 22, 18, 14, 10, 6, 2}, true))
-	animations = append(animations, animation.NewAnimation(spritesheet, "WalkUp", []int{3, 7, 11, 15, 19, 23, 19, 15, 11, 7}, true))*/
-	//spritesheet := spritesheet.NewSpritesheet()
+
+	tm, _ := tilemap.ParseTiledJSON("assets/tmx/world1.json")
+
 	spritesheet := spritesheet.LoadSpritesheet("assets/spritesheets/knight_iso_char.png", 84, 84)
 	var animations []*animation.Animation
 	animations = append(animations, animation.NewAnimation(spritesheet, "Idle", []int{0, 1, 2, 3}))
@@ -47,19 +30,28 @@ func run() {
 	animations = append(animations, animation.NewAnimation(spritesheet, "AttackUp", []int{29, 30, 31}))
 	animations = append(animations, animation.NewAnimation(spritesheet, "AttackRight", []int{32, 33, 34}))
 	animations = append(animations, animation.NewAnimation(spritesheet, "AttackLeft", []int{35, 36, 37}))
-	player := player.NewPlayer(animations, win)
+
+	world := world.NewWorld(400, 400)
+	world.SetTilemap(tm)
+	//v := pixel.V(float64(tm.TileWidth*tm.Width), float64(tm.TileHeight*tm.Height))
+	//world.Resize()
+	win := world.Window
+	player := player.NewPlayer(animations, world)
+	world.AddEntity("player", player)
 
 	fps := 60
 	ticks := 0
 	interval := time.Duration(float64(1000) / float64(fps))
 	ticker := time.NewTicker(time.Millisecond * interval)
+
 	go func() {
 		for {
 			select {
 			case <-ticker.C: //main game loop @normalized fps is here
 				win.Clear(colornames.Black)
-				tm.Draw(win)
+				tm.DrawLayers(win, []int{0, 1}) //draw base layer
 				player.Update(ticks)
+				tm.DrawLayers(win, []int{2, 3}) //draw everything else
 				win.Update()
 				ticks++
 				//assume 60 ticks per second

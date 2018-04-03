@@ -4,17 +4,16 @@ import (
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/scottwinkler/pixel-experiment/animation"
+	"github.com/scottwinkler/pixel-experiment/world"
 )
 
 type Player struct {
 	Sprite           *pixel.Sprite
-	Speed            int
-	X                int
-	Y                int
+	Speed            float64
 	V                pixel.Vec
 	Matrix           pixel.Matrix
 	AnimationManager *animation.AnimationManager
-	Window           *pixelgl.Window
+	World            *world.World
 }
 
 const (
@@ -27,13 +26,11 @@ const (
 func (p *Player) SetAnimationManager(animationManager *animation.AnimationManager) {
 	p.AnimationManager = animationManager
 }
-func NewPlayer(animations []*animation.Animation, window *pixelgl.Window) *Player {
+func NewPlayer(animations []*animation.Animation, world *world.World) *Player {
 	player := &Player{
-		Speed:  3, //default
-		Window: window,
-		X:      200,
-		Y:      150,
-		V:      pixel.V(float64(200), float64(150)),
+		Speed: 3, //default
+		World: world,
+		V:     pixel.V(200, 150),
 	}
 	animationManager := animation.NewAnimationManager(animations)
 	animationManager.Select("Idle")
@@ -43,18 +40,34 @@ func NewPlayer(animations []*animation.Animation, window *pixelgl.Window) *Playe
 	return player
 }
 
+//returns true if the player would have a collision at the given point
+func (p *Player) Collides(v pixel.Vec) bool {
+	if !p.World.Tilemap.Bounds().Contains(v) {
+		return true //out of bounds!
+	}
+	tile := p.World.Tilemap.GetTileAtPosition(v, 3) //check collision layer
+	if tile == nil {
+		return false
+	}
+	//fmt.Printf("got tile: v:%v, isCollidable %t, gid: %d", tile.V, tile.IsCollidable, tile.Gid)
+	return tile.IsCollidable
+}
+
 func (p *Player) Move(direction int) {
+	nextPos := pixel.V(p.V.X, p.V.Y)
 	switch direction {
 	case LEFT:
-		p.X -= p.Speed
+		nextPos.X -= p.Speed
 	case RIGHT:
-		p.X += p.Speed
+		nextPos.X += p.Speed
 	case DOWN:
-		p.Y -= p.Speed
+		nextPos.Y -= p.Speed
 	case UP:
-		p.Y += p.Speed
+		nextPos.Y += p.Speed
 	}
-	p.V = pixel.V(float64(p.X), float64(p.Y))
+	if !p.Collides(nextPos) {
+		p.V = nextPos
+	}
 	matrix := pixel.Matrix(pixel.IM.Moved(p.V).Scaled(p.V, 0.5))
 	p.Matrix = matrix
 }
@@ -66,7 +79,7 @@ func (p *Player) Update(tick int) {
 		camZoom = 1.0
 	)
 
-	win := p.Window
+	win := p.World.Window
 	cam := pixel.IM.Scaled(camPos, camZoom).Moved(win.Bounds().Center().Sub(camPos))
 	win.SetMatrix(cam)
 	if win.Pressed(pixelgl.KeyLeft) || win.Pressed(pixelgl.KeyA) {
@@ -104,5 +117,5 @@ func (p *Player) Update(tick int) {
 	p.Draw()
 }
 func (p *Player) Draw() {
-	p.Sprite.Draw(p.Window, p.Matrix)
+	p.Sprite.Draw(p.World.Window, p.Matrix)
 }

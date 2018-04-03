@@ -16,6 +16,7 @@ type Tileset struct {
 	LastGid     int
 	Source      string `json:"source"`
 	TilesetData TilesetData
+	Batch       *pixel.Batch
 }
 
 type TilesetData struct {
@@ -40,15 +41,12 @@ const TMX_DIR = "assets/tmx/"
 //fetchs the rest of the tileset data
 //todo: allow it to read from sets of images, not just a single image. Will need to change the datastructure of TilesetData to allow this
 func (ts *Tileset) FetchTilesetData() {
-	//fmt.Println("reading data source file")
-	//fmt.Println(TMX_DIR + ts.Source)
 	raw, err := ioutil.ReadFile(TMX_DIR + ts.Source)
 	if err != nil {
 		panic(err)
 	}
 	var tilesetData TilesetData
 	json.Unmarshal(raw, &tilesetData)
-	//fmt.Println(TMX_DIR + tilesetData.Image)
 	pic, err := utility.LoadPicture(TMX_DIR + tilesetData.Image)
 	if err != nil {
 		panic(err)
@@ -56,8 +54,7 @@ func (ts *Tileset) FetchTilesetData() {
 	tilesetData.Picture = &pic
 	ts.TilesetData = tilesetData
 	ts.LastGid = ts.FirstGid + tilesetData.TileCount - 1
-	//fmt.Printf("%+v\n", ts)
-	//return ts
+	ts.Batch = pixel.NewBatch(&pixel.TrianglesData{}, *ts.TilesetData.Picture)
 }
 
 //returns true if the specified gid is in the tileset
@@ -67,8 +64,10 @@ func (ts *Tileset) Contains(gid int) bool {
 
 func (ts *Tileset) GetPropertiesForGid(gid int) map[string]interface{} {
 	var properties map[string]interface{}
-	value := ts.TilesetData.Properties[strconv.Itoa(gid)]
+	value := ts.TilesetData.Properties[strconv.Itoa(gid-1)] //something is weird about the csv data. the value is one more than it should be
+	//fmt.Printf("[gid: %d value: %v]", gid, value)
 	if value != nil {
+
 		properties = value.(map[string]interface{})
 	}
 	return properties
@@ -98,4 +97,13 @@ func (tileset Tileset) Draw(t pixel.Target) {
 	for i, tile := range tileset.tiles {
 		tile.spritePtr.Draw(t, tileset.tiles[i].matrix)
 	}
+}*/
+
+//draw all tiles which use this tileset together as a batch
+/*func (ts *Tileset) Draw(t pixel.Target) {
+	batch := pixel.NewBatch(&pixel.TraingleData{},ts.TilesetData.Picture)
+	for _, tile := range ts.Tiles {
+		tile.Draw(batch)
+	}
+	batch.Draw(t)
 }*/

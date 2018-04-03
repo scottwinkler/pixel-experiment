@@ -9,8 +9,8 @@ type Tile struct {
 	Height       int           //the height of the tile in pixels
 	Width        int           //the width of the tile in pixels
 	Layer        *TilemapLayer //The layer in the Tilemap data that this tile belongs to
-	X            int           //the x coordinate of this tile
-	Y            int           //the y coordinate of this tile
+	V            pixel.Vec     //the draw position
+	Gid          int
 	Sprite       *pixel.Sprite
 	Matrix       pixel.Matrix
 	Properties   map[string]interface{}
@@ -18,18 +18,19 @@ type Tile struct {
 }
 
 // NewTile creates a Tile from the
-func NewTile(layer *TilemapLayer, x int, y int, width int, height int, sprite *pixel.Sprite, matrix pixel.Matrix, properties map[string]interface{}) *Tile {
+func NewTile(layer *TilemapLayer, v pixel.Vec, width int, height int, gid int, sprite *pixel.Sprite, matrix pixel.Matrix, properties map[string]interface{}) *Tile {
 	isCollidable := false
 	if properties != nil {
 		value := properties["collidable"]
+		//	fmt.Printf("collidable: %s", value)
 		if value != nil {
 			isCollidable = value.(bool)
 		}
 	}
 	tile := Tile{
 		Layer:        layer,
-		X:            x,
-		Y:            y,
+		V:            v,
+		Gid:          gid,
 		Width:        width,
 		Height:       height,
 		Sprite:       sprite,
