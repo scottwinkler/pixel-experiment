@@ -9,6 +9,7 @@ import (
 
 type Spritesheet struct {
 	Sprites []*pixel.Sprite
+	Matrix  pixel.Matrix
 }
 
 //returns an empty spritesheet
@@ -16,6 +17,7 @@ func NewSpritesheet() *Spritesheet {
 	var sprites []*pixel.Sprite
 	spritesheet := &Spritesheet{
 		Sprites: sprites,
+		Matrix:  pixel.IM,
 	}
 	return spritesheet
 }
@@ -35,7 +37,7 @@ func (s *Spritesheet) AddSprite(sprite *pixel.Sprite) {
 }
 
 //parse a spritesheet based on a standard width and height
-func LoadSpritesheet(path string, frameWidth int, frameHeight int) *Spritesheet {
+func LoadSpritesheet(path string, frame pixel.Rect, scale float64) *Spritesheet {
 	parts := strings.Split(path, ".")
 	ext := parts[len(parts)-1]
 	var sprites []*pixel.Sprite
@@ -45,9 +47,9 @@ func LoadSpritesheet(path string, frameWidth int, frameHeight int) *Spritesheet 
 		if err != nil {
 			panic(err)
 		}
-		for y := pic.Bounds().Max.Y; y > pic.Bounds().Min.Y; y -= float64(frameHeight) {
-			for x := pic.Bounds().Min.X; x < pic.Bounds().Max.X; x += float64(frameWidth) {
-				frame := pixel.R(x, y-float64(frameHeight), x+float64(frameWidth), y)
+		for y := pic.Bounds().Max.Y; y > pic.Bounds().Min.Y; y -= frame.H() {
+			for x := pic.Bounds().Min.X; x < pic.Bounds().Max.X; x += frame.W() {
+				frame := pixel.R(x, y-frame.H(), x+frame.W(), y)
 				sprites = append(sprites, pixel.NewSprite(pic, frame))
 			}
 		}
@@ -59,6 +61,8 @@ func LoadSpritesheet(path string, frameWidth int, frameHeight int) *Spritesheet 
 			sprites = append(sprites, sprite)
 		}
 	}
+
 	//fmt.Printf("len: %d", len(sprites))
-	return &Spritesheet{Sprites: sprites}
+	matrix := pixel.IM.Scaled(pixel.V(0, 0), scale)
+	return &Spritesheet{Sprites: sprites, Matrix: matrix}
 }

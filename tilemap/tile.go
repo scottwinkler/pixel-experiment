@@ -22,7 +22,6 @@ func NewTile(layer *TilemapLayer, v pixel.Vec, width int, height int, gid int, s
 	isCollidable := false
 	if properties != nil {
 		value := properties["collidable"]
-		//	fmt.Printf("collidable: %s", value)
 		if value != nil {
 			isCollidable = value.(bool)
 		}

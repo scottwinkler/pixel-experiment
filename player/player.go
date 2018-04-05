@@ -35,7 +35,7 @@ func NewPlayer(animations []*animation.Animation, world *world.World) *Player {
 	animationManager := animation.NewAnimationManager(animations)
 	animationManager.Select("Idle")
 	player.Sprite = animationManager.Selected.Spritesheet.Sprites[animationManager.Selected.Frames[0]]
-	player.Matrix = pixel.Matrix(pixel.IM.Moved(player.V).Scaled(player.V, 0.5))
+	player.Matrix = pixel.Matrix(pixel.IM.Moved(player.V))
 	player.SetAnimationManager(animationManager)
 	return player
 }
@@ -45,7 +45,7 @@ func (p *Player) Collides(v pixel.Vec) bool {
 	if !p.World.Tilemap.Bounds().Contains(v) {
 		return true //out of bounds!
 	}
-	tile := p.World.Tilemap.GetTileAtPosition(v, 3) //check collision layer
+	tile := p.World.Tilemap.GetTileAtPosition(v, "Collision") //check tile in collision layer
 	if tile == nil {
 		return false
 	}
@@ -68,7 +68,7 @@ func (p *Player) Move(direction int) {
 	if !p.Collides(nextPos) {
 		p.V = nextPos
 	}
-	matrix := pixel.Matrix(pixel.IM.Moved(p.V).Scaled(p.V, 0.5))
+	matrix := pixel.IM.Moved(p.V)
 	p.Matrix = matrix
 }
 
@@ -117,5 +117,8 @@ func (p *Player) Update(tick int) {
 	p.Draw()
 }
 func (p *Player) Draw() {
-	p.Sprite.Draw(p.World.Window, p.Matrix)
+	animation := p.AnimationManager.Selected
+	//chained methods so that we first scale by spritesheet size, then by reflection, then by position
+	matrix := animation.Spritesheet.Matrix.Chained(p.Matrix)
+	p.Sprite.Draw(p.World.Window, matrix)
 }

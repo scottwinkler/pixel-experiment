@@ -47,8 +47,6 @@ func (l *TilemapLayer) MakeTiles(tm *Tilemap) *TilemapLayer {
 
 				if tileset.Contains(gid) {
 					tileSetName = tileset.TilesetData.Name
-
-					//fmt.Printf("gid: %d in tileset", gid)
 					if l.Visible { //necessary to hide collision tiles
 						sprite = tileset.GetSpriteForGid(gid)
 					}
@@ -63,7 +61,6 @@ func (l *TilemapLayer) MakeTiles(tm *Tilemap) *TilemapLayer {
 				tileSetGroup = append(tileSetGroup, tile) //add tile to tileset group for future reference
 				tileSetGroups[tileSetName] = tileSetGroup
 			}
-			//fmt.Printf("new tile: %v", tile)
 			tiles = append(tiles, tile)
 			index++
 		}
@@ -77,7 +74,6 @@ func (l *TilemapLayer) Draw(t pixel.Target) {
 
 	for name, tiles := range l.BatchGroups {
 		ts := l.Tilemap.GetTileset(name)
-		//fmt.Printf("len of tiles in ts group: %v -- %d, %v", ts, len(tiles), pic)
 
 		batch := ts.Batch
 		batch.Clear()
