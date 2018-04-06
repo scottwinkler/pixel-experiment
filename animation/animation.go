@@ -4,12 +4,12 @@ import (
 	"math"
 
 	"github.com/faiface/pixel"
-	"github.com/scottwinkler/pixel-experiment/spritesheet"
+	"github.com/scottwinkler/pixel-experiment/utility"
 )
 
 type Animation struct {
 	Name             string
-	Spritesheet      *spritesheet.Spritesheet
+	Spritesheet      *utility.Spritesheet
 	Matrix           pixel.Matrix
 	Frames           []int
 	AnimationManager *AnimationManager
@@ -19,7 +19,7 @@ type Animation struct {
 }
 
 //utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
-func AnimationsFromSpritesheet(spritesheet *spritesheet.Spritesheet, mapping map[string][]int) []*Animation {
+func AnimationsFromSpritesheet(spritesheet *utility.Spritesheet, mapping map[string][]int) []*Animation {
 	var animations []*Animation
 	for name, frames := range mapping {
 		animations = append(animations, NewAnimation(spritesheet, name, frames))
@@ -27,7 +27,7 @@ func AnimationsFromSpritesheet(spritesheet *spritesheet.Spritesheet, mapping map
 	return animations
 }
 
-func NewAnimation(spritesheet *spritesheet.Spritesheet, name string, frames []int) *Animation {
+func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int) *Animation {
 
 	//smooth animation by reversing it after it has completed
 	for i := len(frames) - 1; i > 0; i-- {

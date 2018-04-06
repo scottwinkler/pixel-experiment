@@ -1,16 +1,21 @@
 package player
 
 import (
+	"fmt"
+
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/rs/xid"
 	"github.com/scottwinkler/pixel-experiment/animation"
 	"github.com/scottwinkler/pixel-experiment/world"
 )
 
 type Player struct {
+	id               string
 	Sprite           *pixel.Sprite
 	Speed            float64
 	V                pixel.Vec
+	R                float64 //used for collider calculations
 	Matrix           pixel.Matrix
 	AnimationManager *animation.AnimationManager
 	World            *world.World
@@ -26,31 +31,29 @@ const (
 func (p *Player) SetAnimationManager(animationManager *animation.AnimationManager) {
 	p.AnimationManager = animationManager
 }
-func NewPlayer(animations []*animation.Animation, world *world.World) *Player {
-	player := &Player{
-		Speed: 3, //default
-		World: world,
-		V:     pixel.V(200, 150),
-	}
+func NewPlayer(v pixel.Vec, animations []*animation.Animation, world *world.World) *Player {
 	animationManager := animation.NewAnimationManager(animations)
 	animationManager.Select("Idle")
-	player.Sprite = animationManager.Selected.Spritesheet.Sprites[animationManager.Selected.Frames[0]]
-	player.Matrix = pixel.Matrix(pixel.IM.Moved(player.V))
-	player.SetAnimationManager(animationManager)
+	sprite := animationManager.Selected.Spritesheet.Sprites[animationManager.Selected.Frames[0]]
+	matrix := pixel.Matrix(pixel.IM.Moved(v))
+	radius := float64(world.Tilemap.TileHeight / 3) //not a great solution for rectangles
+	fmt.Printf("r: %f", radius)
+	id := xid.New().String()
+	player := &Player{
+		id:               id,
+		Sprite:           sprite,
+		Speed:            3, //default
+		V:                v,
+		R:                radius,
+		Matrix:           matrix,
+		AnimationManager: animationManager,
+		World:            world,
+	}
 	return player
 }
 
-//returns true if the player would have a collision at the given point
-func (p *Player) Collides(v pixel.Vec) bool {
-	if !p.World.Tilemap.Bounds().Contains(v) {
-		return true //out of bounds!
-	}
-	tile := p.World.Tilemap.GetTileAtPosition(v, "Collision") //check tile in collision layer
-	if tile == nil {
-		return false
-	}
-	//fmt.Printf("got tile: v:%v, isCollidable %t, gid: %d", tile.V, tile.IsCollidable, tile.Gid)
-	return tile.IsCollidable
+func (p *Player) Id() string {
+	return p.id
 }
 
 func (p *Player) Move(direction int) {
@@ -65,11 +68,16 @@ func (p *Player) Move(direction int) {
 	case UP:
 		nextPos.Y += p.Speed
 	}
-	if !p.Collides(nextPos) {
+	if !p.World.Collides(p.Id(), nextPos, p.R) {
 		p.V = nextPos
 	}
+	//update matrix and collision circle
 	matrix := pixel.IM.Moved(p.V)
 	p.Matrix = matrix
+}
+
+func (p *Player) Collider() (pixel.Vec, float64) {
+	return p.V, p.R
 }
 
 func (p *Player) Update(tick int) {

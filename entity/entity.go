@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/Tarliton/collision2d"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/scottwinkler/pixel-experiment/animation"
@@ -14,6 +15,7 @@ type Entity struct {
 	Matrix           pixel.Matrix
 	AnimationManager *animation.AnimationManager
 	World            *world.World
+	Collider         collision2d.Circle
 }
 
 const (

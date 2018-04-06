@@ -1,10 +1,9 @@
-package spritesheet
+package utility
 
 import (
 	"strings"
 
 	"github.com/faiface/pixel"
-	"github.com/scottwinkler/pixel-experiment/utility"
 )
 
 type Spritesheet struct {
@@ -24,7 +23,7 @@ func NewSpritesheet() *Spritesheet {
 
 //helper method, used with addsprite
 func LoadSprite(path string) *pixel.Sprite {
-	pic, err := utility.LoadPicture(path)
+	pic, err := LoadPicture(path)
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +42,7 @@ func LoadSpritesheet(path string, frame pixel.Rect, scale float64) *Spritesheet 
 	var sprites []*pixel.Sprite
 	//process a png spritesheet with multiple frames
 	if strings.EqualFold(ext, "png") {
-		pic, err := utility.LoadPicture(path)
+		pic, err := LoadPicture(path)
 		if err != nil {
 			panic(err)
 		}
@@ -54,7 +53,7 @@ func LoadSpritesheet(path string, frame pixel.Rect, scale float64) *Spritesheet 
 			}
 		}
 	} else if strings.EqualFold(ext, "gif") { //process a gif spritesheet
-		gif, _ := utility.LoadGif(path)
+		gif, _ := LoadGif(path)
 
 		for _, pic := range gif {
 			sprite := pixel.NewSprite(pic, pic.Bounds())

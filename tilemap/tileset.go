@@ -36,7 +36,7 @@ type TilesetData struct {
 	Properties  map[string]interface{} `json:"tileproperties"`
 }
 
-const TMX_DIR = "assets/tmx/"
+const TMX_DIR = "_assets/tmx/"
 
 //fetchs the rest of the tileset data
 //todo: allow it to read from sets of images, not just a single image. Will need to change the datastructure of TilesetData to allow this
