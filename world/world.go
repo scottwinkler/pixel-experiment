@@ -1,6 +1,8 @@
 package world
 
 import (
+	"math"
+	"strings"
 	"time"
 
 	"github.com/faiface/pixel"
@@ -9,10 +11,22 @@ import (
 	"golang.org/x/image/colornames"
 )
 
+//Directions
+const (
+	LEFT  = 0
+	RIGHT = 1
+	DOWN  = 2
+	UP    = 3
+)
+
 type GameObject interface {
 	Update(int)
-	Collider() (pixel.Vec, float64)
 	Id() string
+	HandleHit(GameObject)
+	Speed() float64
+	Direction() int
+	V() pixel.Vec
+	R() float64
 }
 
 type World struct {
@@ -40,21 +54,52 @@ func NewWorld(bounds pixel.Rect, tilemap *tilemap.Tilemap) *World {
 }
 func (w *World) UpdateGameObjects(tick int) {
 	for _, group := range w.Groups {
+		//fmt.Printf("updating group: %s", key)
 		for _, gameobject := range group {
 			gameobject.Update(tick)
 		}
 	}
 }
 
-func (w *World) Start(fps float64) {
+func (w *World) HitEvent(source interface{}) {
+	sourceGameObject := source.(GameObject)
+	for _, group := range w.Groups {
+		for _, gameobject := range group {
+			//don't notify the source of the hit
+			if !strings.EqualFold(gameobject.Id(), sourceGameObject.Id()) {
+				gameobject.HandleHit(sourceGameObject) //leave it to the gameobjects to decide what to do
+			}
+		}
+	}
+}
+
+//returns the direction of point a relative to point b (b is the center)
+func RelativeDirection(posA pixel.Vec, posB pixel.Vec) int {
+	posA = posA.Sub(posB)
+	top := posA.Y >= posA.X    //above line y=x?
+	right := posA.Y >= -posA.X //above line y=-x?
+	var direction int
+	if top && right {
+		direction = UP
+	} else if top {
+		direction = LEFT
+	} else if right {
+		direction = RIGHT
+	} else {
+		direction = DOWN
+	}
+	return direction
+}
+
+func (w *World) Start(fps float64, animationSpeed float64) {
 	tick := 0
 	interval := time.Duration(float64(1000) / float64(fps))
 	ticker := time.NewTicker(time.Millisecond * interval)
 	win := w.Window
 	tm := w.Tilemap
 	maxTick := 1
-	if fps >= 10 {
-		maxTick = int(fps) / 10
+	if fps >= animationSpeed {
+		maxTick = int(fps) / int(animationSpeed)
 	}
 	go func() {
 		for {
@@ -95,11 +140,14 @@ func (w *World) AddGameObject(group string, gameobject GameObject) {
 
 //CircleCollision returns true if the circles collide with each other.
 func CircleCollision(v1 pixel.Vec, r1 float64, v2 pixel.Vec, r2 float64) bool {
-	differenceV := pixel.V(v1.X, v2.Y).Sub(v1)
+	//fmt.Printf("checking collisions between v1:%v(r=%f), and v2:%v(r=%f)", v1, r1, v2, r2)
+	distanceSqr := math.Pow(v2.X-v1.X, 2) + math.Pow(v2.Y-v1.Y, 2)
 	totalRadius := r1 + r2
 	totalRadiusSqr := totalRadius * totalRadius
-	distanceSqr := differenceV.Dot(differenceV)
-	return distanceSqr > totalRadiusSqr
+
+	//distanceSqr := differenceV * differenceV
+	//fmt.Printf("distanceSqr: %f,totalRadiusSqr: %f,collids:%t", distanceSqr, totalRadiusSqr, distanceSqr < totalRadiusSqr)
+	return distanceSqr < totalRadiusSqr
 }
 
 //returns true if a circle with the given point and radius collides with any other collidable entities circle
@@ -115,12 +163,17 @@ func (w *World) Collides(id string, v1 pixel.Vec, r1 float64) bool {
 	}
 
 	//check if it collides with an existing game object which is not this one
+	//fmt.Println("checking collisions between circles")
 	for _, gameobjects := range w.Groups {
 		for _, gameobject := range gameobjects {
-			v2, r2 := gameobject.Collider()
-			if CircleCollision(v1, r1, v2, r2) && id != gameobject.Id() {
+			v2 := gameobject.V()
+			r2 := gameobject.R()
+			if !strings.EqualFold(id, gameobject.Id()) && CircleCollision(v1, r1, v2, r2) {
+
+				//fmt.Printf("id: (%s), gameobjec.Id()(%s)", id, gameobject.Id())
 				return true
 			}
+
 		}
 	}
 	return false

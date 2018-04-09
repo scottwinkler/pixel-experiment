@@ -1,53 +1,47 @@
 package player
 
 import (
-	"fmt"
-
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/rs/xid"
 	"github.com/scottwinkler/pixel-experiment/animation"
+	"github.com/scottwinkler/pixel-experiment/sound"
 	"github.com/scottwinkler/pixel-experiment/world"
 )
 
 type Player struct {
 	id               string
 	Sprite           *pixel.Sprite
-	Speed            float64
-	V                pixel.Vec
-	R                float64 //used for collider calculations
+	speed            float64
+	v                pixel.Vec
+	r                float64 //used for collider calculations
 	Matrix           pixel.Matrix
 	AnimationManager *animation.AnimationManager
+	SoundManager     *sound.SoundManager
 	World            *world.World
+	direction        int
 }
 
-const (
-	LEFT  = 0
-	RIGHT = 1
-	DOWN  = 2
-	UP    = 3
-)
-
-func (p *Player) SetAnimationManager(animationManager *animation.AnimationManager) {
-	p.AnimationManager = animationManager
-}
-func NewPlayer(v pixel.Vec, animations []*animation.Animation, world *world.World) *Player {
+func NewPlayer(v pixel.Vec, r float64, animations []*animation.Animation, sounds []*sound.Sound, w *world.World) *Player {
 	animationManager := animation.NewAnimationManager(animations)
+	soundManager := sound.NewSoundManager(sounds)
 	animationManager.Select("Idle")
 	sprite := animationManager.Selected.Spritesheet.Sprites[animationManager.Selected.Frames[0]]
 	matrix := pixel.Matrix(pixel.IM.Moved(v))
-	radius := float64(world.Tilemap.TileHeight / 3) //not a great solution for rectangles
-	fmt.Printf("r: %f", radius)
+	//radius := float64(world.Tilemap.TileHeight / 3) //not a great solution for rectangles
+	//fmt.Printf("r: %f", radius)
 	id := xid.New().String()
 	player := &Player{
 		id:               id,
 		Sprite:           sprite,
-		Speed:            3, //default
-		V:                v,
-		R:                radius,
+		speed:            3, //default
+		v:                v,
+		r:                r,
 		Matrix:           matrix,
 		AnimationManager: animationManager,
-		World:            world,
+		SoundManager:     soundManager,
+		World:            w,
+		direction:        world.DOWN,
 	}
 	return player
 }
@@ -56,33 +50,103 @@ func (p *Player) Id() string {
 	return p.id
 }
 
+func (p *Player) V() pixel.Vec {
+	return p.v
+}
+
+func (p *Player) R() float64 {
+	return p.r
+}
+
+func (p *Player) Speed() float64 {
+	return p.speed
+}
+
+func (p *Player) Direction() int {
+	return p.direction
+}
+
 func (p *Player) Move(direction int) {
-	nextPos := pixel.V(p.V.X, p.V.Y)
+	nextPos := pixel.V(p.v.X, p.v.Y)
+	p.direction = direction
 	switch direction {
-	case LEFT:
-		nextPos.X -= p.Speed
-	case RIGHT:
-		nextPos.X += p.Speed
-	case DOWN:
-		nextPos.Y -= p.Speed
-	case UP:
-		nextPos.Y += p.Speed
+	case world.LEFT:
+		nextPos.X -= p.speed
+		p.AnimationManager.Select("MoveLeft")
+	case world.RIGHT:
+		nextPos.X += p.speed
+		p.AnimationManager.Select("MoveRight")
+	case world.DOWN:
+		nextPos.Y -= p.speed
+		p.AnimationManager.Select("MoveDown")
+	case world.UP:
+		nextPos.Y += p.speed
+		p.AnimationManager.Select("MoveUp")
 	}
-	if !p.World.Collides(p.Id(), nextPos, p.R) {
-		p.V = nextPos
+	if !p.World.Collides(p.Id(), nextPos, p.r) {
+		p.v = nextPos
 	}
 	//update matrix and collision circle
-	matrix := pixel.IM.Moved(p.V)
+	matrix := pixel.IM.Moved(p.v)
 	p.Matrix = matrix
 }
 
-func (p *Player) Collider() (pixel.Vec, float64) {
-	return p.V, p.R
+func (p *Player) HandleHit(s world.GameObject) {
+	//am i near enoguh to be affected?
+	//draw a slightly bigger circle than the collision circle
+	//so that the hit box is reasonable
+
+	if world.CircleCollision(p.v, p.r, s.V(), s.R()+s.Speed()) {
+		//where am i relative to the source?
+		relativePos := p.v.Sub(s.V())
+		top := relativePos.Y >= relativePos.X    //above line y=x?
+		right := relativePos.Y >= -relativePos.X //above line y=-x?
+
+		var relativeDir int
+		if top && right {
+			relativeDir = world.UP
+		} else if top {
+			relativeDir = world.LEFT
+		} else if right {
+			relativeDir = world.RIGHT
+		} else {
+			relativeDir = world.DOWN
+		}
+		//is the source facing the right direction?
+		if relativeDir == s.Direction() {
+			switch p.direction {
+			case world.LEFT:
+				p.AnimationManager.Select("HitLeft")
+			case world.RIGHT:
+				p.AnimationManager.Select("HitRight")
+			case world.DOWN:
+				p.AnimationManager.Select("HitDown")
+			case world.UP:
+				p.AnimationManager.Select("HitUp")
+			}
+		}
+	}
+}
+
+func (p *Player) Attack(direction int) {
+	p.direction = direction
+	p.SoundManager.Play("attack1")
+	switch direction {
+	case world.LEFT:
+		p.AnimationManager.Select("AttackLeft")
+	case world.RIGHT:
+		p.AnimationManager.Select("AttackRight")
+	case world.DOWN:
+		p.AnimationManager.Select("AttackDown")
+	case world.UP:
+		p.AnimationManager.Select("AttackUp")
+	}
+	p.World.HitEvent(p)
 }
 
 func (p *Player) Update(tick int) {
 	var (
-		camPos = p.V //position camera centered on player
+		camPos = p.v //position camera centered on player
 		//camSpeed = 1.0
 		camZoom = 1.0
 	)
@@ -90,34 +154,25 @@ func (p *Player) Update(tick int) {
 	win := p.World.Window
 	cam := pixel.IM.Scaled(camPos, camZoom).Moved(win.Bounds().Center().Sub(camPos))
 	win.SetMatrix(cam)
-	if win.Pressed(pixelgl.KeyLeft) || win.Pressed(pixelgl.KeyA) {
-		p.AnimationManager.Select("RunLeft")
-		p.Move(LEFT)
-	} else if win.Pressed(pixelgl.KeyRight) || win.Pressed(pixelgl.KeyD) {
-		p.AnimationManager.Select("RunRight")
-		p.Move(RIGHT)
-	} else if win.Pressed(pixelgl.KeyDown) || win.Pressed(pixelgl.KeyS) {
-		p.AnimationManager.Select("RunDown")
-		p.Move(DOWN)
-	} else if win.Pressed(pixelgl.KeyUp) || win.Pressed(pixelgl.KeyW) {
-		p.AnimationManager.Select("RunUp")
-		p.Move(UP)
-	} else if win.Pressed(pixelgl.MouseButtonLeft) {
-		//determine what quadrant relative to the player the mouse click happened
-		mouse := cam.Unproject(win.MousePosition()).Sub(p.V)
-		top := mouse.Y >= mouse.X    //above line y=x?
-		right := mouse.Y >= -mouse.X //above line y=-x?
-		if top && right {
-			p.AnimationManager.Select("AttackUp")
-		} else if top {
-			p.AnimationManager.Select("AttackLeft")
-		} else if right {
-			p.AnimationManager.Select("AttackRight")
+	if p.AnimationManager.Selected.Skippable() || p.AnimationManager.Selected.Done() { //only listen to new events if the current animation is skippable or done playing
+		if win.Pressed(pixelgl.KeyLeft) || win.Pressed(pixelgl.KeyA) {
+
+			p.Move(world.LEFT)
+		} else if win.Pressed(pixelgl.KeyRight) || win.Pressed(pixelgl.KeyD) {
+			p.Move(world.RIGHT)
+		} else if win.Pressed(pixelgl.KeyDown) || win.Pressed(pixelgl.KeyS) {
+			p.Move(world.DOWN)
+		} else if win.Pressed(pixelgl.KeyUp) || win.Pressed(pixelgl.KeyW) {
+			p.Move(world.UP)
+		} else if win.Pressed(pixelgl.MouseButtonLeft) {
+			//determine what quadrant relative to the player the mouse click happened
+			mouse := cam.Unproject(win.MousePosition())
+			dir := world.RelativeDirection(mouse, p.v)
+			p.Attack(dir)
+
 		} else {
-			p.AnimationManager.Select("AttackDown")
+			p.AnimationManager.Select("Idle")
 		}
-	} else {
-		p.AnimationManager.Select("Idle")
 	}
 	if tick == 0 {
 		p.Sprite = p.AnimationManager.Selected.Next()
@@ -127,6 +182,6 @@ func (p *Player) Update(tick int) {
 func (p *Player) Draw() {
 	animation := p.AnimationManager.Selected
 	//chained methods so that we first scale by spritesheet size, then by reflection, then by position
-	matrix := animation.Spritesheet.Matrix.Chained(p.Matrix)
+	matrix := animation.Matrix.Chained(p.Matrix)
 	p.Sprite.Draw(p.World.Window, matrix)
 }

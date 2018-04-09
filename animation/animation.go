@@ -16,18 +16,28 @@ type Animation struct {
 	Index            int
 	Loop             bool
 	Paused           bool
+	skippable        bool
+	done             bool
 }
 
 //utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
-func AnimationsFromSpritesheet(spritesheet *utility.Spritesheet, mapping map[string][]int) []*Animation {
+func AnimationsFromSpritesheet(spritesheet *utility.Spritesheet, mapping map[string]interface{}) []*Animation {
 	var animations []*Animation
-	for name, frames := range mapping {
-		animations = append(animations, NewAnimation(spritesheet, name, frames))
+	for key, value := range mapping {
+		attributes := value.(map[string]interface{})
+		framesArr := attributes["Frames"].([]interface{})
+		var frames []int
+		for _, frame := range framesArr {
+			frames = append(frames, int(frame.(float64)))
+		}
+		loop := attributes["Loop"].(bool)
+		skippable := attributes["Skippable"].(bool)
+		animations = append(animations, NewAnimation(spritesheet, key, frames, loop, skippable))
 	}
 	return animations
 }
 
-func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int) *Animation {
+func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int, loop bool, skippable bool) *Animation {
 
 	//smooth animation by reversing it after it has completed
 	for i := len(frames) - 1; i > 0; i-- {
@@ -38,10 +48,12 @@ func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int) *
 		Name:        name,
 		Spritesheet: spritesheet,
 		Frames:      frames,
-		Index:       0,
-		Loop:        true,
+		Index:       0, //when Next() is first called it will go to index=0 which is what we want
+		Loop:        loop,
 		Paused:      true,
-		Matrix:      pixel.IM,
+		Matrix:      spritesheet.Matrix,
+		skippable:   skippable,
+		done:        false,
 	}
 	return &animation
 }
@@ -51,6 +63,7 @@ func (a *Animation) SetAnimationManager(animationManager *AnimationManager) {
 }
 
 func (a *Animation) Reset() {
+	a.done = false
 	a.Index = 0
 }
 
@@ -58,11 +71,19 @@ func (a *Animation) SetPaused(paused bool) {
 	a.Paused = paused
 }
 
+func (a *Animation) Skippable() bool {
+	return a.skippable
+}
+
+func (a *Animation) Done() bool {
+	return a.done
+}
+
 func (a *Animation) Next() *pixel.Sprite {
 	nextIndex := a.Index
 	if !a.Paused {
 		if a.Loop {
-			nextIndex = (a.Index + 1) % len(a.Frames)
+			nextIndex = a.Index % len(a.Frames)
 		}
 	}
 	a.Index = nextIndex
@@ -72,17 +93,16 @@ func (a *Animation) Next() *pixel.Sprite {
 	if frame < 0 {
 		frame = int(math.Abs(float64(frame)))
 		a.Matrix = a.Spritesheet.Matrix.Chained(pixel.IM.Rotated(pixel.ZV, -math.Pi).ScaledXY(pixel.ZV, pixel.V(-1, 1)).Rotated(pixel.ZV, math.Pi))
-		//a.Matrix = Reflected(pixel.IM, origin, math.Pi).Scaled(origin, -1)
 	} else {
-		a.Matrix = pixel.IM
+		a.Matrix = a.Spritesheet.Matrix
 	}
-	return a.Spritesheet.Sprites[frame]
-}
+	a.Index++
+	if a.Index > len(a.Frames)-1 {
+		a.Index = 0
+		if !a.Loop { //check if done, for nonlooping animations
+			a.done = true
+		}
+	}
 
-func Reflected(m pixel.Matrix, around pixel.Vec, angle float64) pixel.Matrix {
-	sin2t, cos2t := math.Sincos(2 * angle)
-	m[4], m[5] = m[4]-around.X, m[5]-around.Y
-	m = m.Chained(pixel.Matrix{cos2t, sin2t, sin2t, -cos2t, 0, 0})
-	m[4], m[5] = m[4]+around.X, m[5]+around.Y
-	return m
+	return a.Spritesheet.Sprites[frame]
 }

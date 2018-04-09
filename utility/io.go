@@ -1,12 +1,31 @@
 package utility
 
 import (
+	"encoding/json"
+	"fmt"
 	"image"
 	"image/gif"
+	"io/ioutil"
 	"os"
 
 	"github.com/faiface/pixel"
 )
+
+func LoadFile(path string) *os.File {
+	file, _ := os.Open(path)
+	return file
+}
+
+func LoadJSON(path string) map[string]interface{} {
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	var f interface{}
+	json.Unmarshal(raw, &f)
+	return f.(map[string]interface{})
+}
 
 func LoadPicture(path string) (pixel.Picture, error) {
 	//fmt.Println("printing cwd")
