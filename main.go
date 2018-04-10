@@ -27,9 +27,9 @@ func run() {
 	animation_mapping := utility.LoadJSON("./config/animation_mapping.json")
 
 	player_spritesheet := utility.LoadSpritesheet("_assets/spritesheets/chara_hero.png", pixel.R(0, 0, 48, 48), 2.0)
-	player_animations := animation.AnimationsFromSpritesheet(player_spritesheet, animation_mapping)
+	player_animations := animation.MappingToAnimations(player_spritesheet, animation_mapping)
 	slime_spritesheet := utility.LoadSpritesheet("_assets/spritesheets/chara_slime.png", pixel.R(0, 0, 48, 48), 2.0)
-	slime_animations := animation.AnimationsFromSpritesheet(slime_spritesheet, animation_mapping)
+	slime_animations := animation.MappingToAnimations(slime_spritesheet, animation_mapping)
 
 	world := world.NewWorld(pixel.R(0, 0, 400, 400), tm)
 	slime := entity.NewEntity(pixel.V(150, 300), 16, slime_animations, world)

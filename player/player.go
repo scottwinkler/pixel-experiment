@@ -150,13 +150,15 @@ func (p *Player) Update(tick int) {
 		//camSpeed = 1.0
 		camZoom = 1.0
 	)
-
+	//fmt.Println("-----------------")
 	win := p.World.Window
 	cam := pixel.IM.Scaled(camPos, camZoom).Moved(win.Bounds().Center().Sub(camPos))
 	win.SetMatrix(cam)
-	if p.AnimationManager.Selected.Skippable() || p.AnimationManager.Selected.Done() { //only listen to new events if the current animation is skippable or done playing
-		if win.Pressed(pixelgl.KeyLeft) || win.Pressed(pixelgl.KeyA) {
 
+	//fmt.Println("deciding to select one...")
+	if p.AnimationManager.Selected.Skippable() || p.AnimationManager.Selected.Done() { //only listen to new events if the current animation is skippable or done playing
+		//fmt.Printf("current animation done: %t", p.AnimationManager.Selected.Done())
+		if win.Pressed(pixelgl.KeyLeft) || win.Pressed(pixelgl.KeyA) {
 			p.Move(world.LEFT)
 		} else if win.Pressed(pixelgl.KeyRight) || win.Pressed(pixelgl.KeyD) {
 			p.Move(world.RIGHT)
@@ -173,6 +175,9 @@ func (p *Player) Update(tick int) {
 		} else {
 			p.AnimationManager.Select("Idle")
 		}
+
+		//fmt.Println("drawing sprite")
+		//fmt.Println("-----------------")
 	}
 	if tick == 0 {
 		p.Sprite = p.AnimationManager.Selected.Next()

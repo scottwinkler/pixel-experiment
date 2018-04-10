@@ -21,7 +21,7 @@ type Animation struct {
 }
 
 //utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
-func AnimationsFromSpritesheet(spritesheet *utility.Spritesheet, mapping map[string]interface{}) []*Animation {
+func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]interface{}) []*Animation {
 	var animations []*Animation
 	for key, value := range mapping {
 		attributes := value.(map[string]interface{})
@@ -80,14 +80,23 @@ func (a *Animation) Done() bool {
 }
 
 func (a *Animation) Next() *pixel.Sprite {
-	nextIndex := a.Index
+	var frame int
 	if !a.Paused {
-		if a.Loop {
-			nextIndex = a.Index % len(a.Frames)
+
+		//fmt.Printf("index: %d/%d", a.Index, len(a.Frames)-1)
+		a.Index++
+		if a.Index > len(a.Frames)-1 {
+			a.Index = 0
+			if !a.Loop {
+				//fmt.Printf("done!")
+				a.done = true
+			}
 		}
+
+		frame = a.Frames[a.Index]
+	} else { //always return same frame if paused or not an appropriate time to change animations
+		frame = a.Frames[a.Index]
 	}
-	a.Index = nextIndex
-	frame := a.Frames[a.Index]
 
 	//does the sprite need to be reflected?
 	if frame < 0 {
@@ -96,13 +105,5 @@ func (a *Animation) Next() *pixel.Sprite {
 	} else {
 		a.Matrix = a.Spritesheet.Matrix
 	}
-	a.Index++
-	if a.Index > len(a.Frames)-1 {
-		a.Index = 0
-		if !a.Loop { //check if done, for nonlooping animations
-			a.done = true
-		}
-	}
-
 	return a.Spritesheet.Sprites[frame]
 }

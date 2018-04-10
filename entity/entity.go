@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"fmt"
-
 	"github.com/faiface/pixel"
 	"github.com/rs/xid"
 	"github.com/scottwinkler/pixel-experiment/animation"
@@ -87,9 +85,11 @@ func (e *Entity) HandleHit(s world.GameObject) {
 	//am i near enoguh to be affected?
 	//draw a slightly bigger circle than the collision circle
 	//so that the hit box is reasonable
-	fmt.Printf("handling hit from: %s", s.Id())
-	if world.CircleCollision(e.v, e.r, s.V(), s.R()+s.Speed()) {
-		fmt.Println("collided")
+
+	//fmt.Printf("handling hit from: %s", s.Id())
+	hitFactor := 1.2
+	if world.CircleCollision(e.v, e.r*hitFactor, s.V(), s.R()+s.Speed()) {
+		//fmt.Println("collided")
 		//where am i relative to the source?
 		relativePos := e.v.Sub(s.V())
 		top := relativePos.Y >= relativePos.X    //above line y=x?
@@ -107,7 +107,7 @@ func (e *Entity) HandleHit(s world.GameObject) {
 		}
 		//is the source facing the right direction?
 		if relativeDir == s.Direction() {
-			fmt.Println("direction correct")
+			//fmt.Println("direction correct")
 			switch e.direction {
 			case world.LEFT:
 				e.AnimationManager.Select("HitLeft")

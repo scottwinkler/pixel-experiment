@@ -28,7 +28,8 @@ func (am *AnimationManager) AddAnimation(animation *Animation) {
 
 func (am *AnimationManager) Select(name string) {
 	//no need to save state if going to a new animation
-	if am.Selected != nil && am.Selected.Name != name {
+	if am.Selected != nil && !am.Selected.Loop { //&& !strings.EqualFold(am.Selected.Name, name) {
+		//fmt.Println("resetting")
 		am.Selected.Reset()
 	}
 	for _, animation := range am.Animations {

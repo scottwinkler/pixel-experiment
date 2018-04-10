@@ -1,0 +1,26 @@
+{
+    "Sword": [
+        {
+            "Name": "swordhitmetal",
+            "Path": "_assets/sounds/Master Bounces/Weapon & Equipment/swordhitmetal_sound.wav"
+        },
+        {
+            "Name": "swordhitflesh",
+            "Path": "_assets/sounds/Master Bounces/Weapon & Equipment/swordhitflesh_sound.wav"
+        },
+        {
+            "Name": "swordhitwood",
+            "Path": "_assets/sounds/Master Bounces/Weapon & Equipment/swordhitwood_sound.wav"
+        },
+        {
+            "Name": "swordswing",
+            "Path": "_assets/sounds/Master Bounces/Weapon & Equipment/swordswing_sound.wav"
+        }
+    ],
+    "Attack": [
+        {
+            "Name": "humanattacking1",
+            "Path": ""
+        }
+    ]
+}

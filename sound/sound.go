@@ -16,6 +16,23 @@ type Sound struct {
 	Extension string
 }
 
+//utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
+func MappingToSounds(mapping map[string]interface{}) []*Sound {
+	var animations []*Animation
+	for key, value := range mapping {
+		attributes := value.(map[string]interface{})
+		framesArr := attributes["Frames"].([]interface{})
+		var frames []int
+		for _, frame := range framesArr {
+			frames = append(frames, int(frame.(float64)))
+		}
+		loop := attributes["Loop"].(bool)
+		skippable := attributes["Skippable"].(bool)
+		animations = append(animations, NewAnimation(spritesheet, key, frames, loop, skippable))
+	}
+	return animations
+}
+
 func (s *Sound) Decode() (beep.StreamSeekCloser, beep.Format) {
 	file := utility.LoadFile(s.Path)
 	var streamer beep.StreamSeekCloser
