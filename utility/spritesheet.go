@@ -7,16 +7,24 @@ import (
 )
 
 type Spritesheet struct {
-	Sprites []*pixel.Sprite
-	Matrix  pixel.Matrix
+	sprites []*pixel.Sprite
+	matrix  pixel.Matrix
+}
+
+func (s *Spritesheet) Matrix() pixel.Matrix {
+	return s.matrix
+}
+
+func (s *Spritesheet) Sprites() []*pixel.Sprite {
+	return s.sprites
 }
 
 //returns an empty spritesheet
 func NewSpritesheet() *Spritesheet {
 	var sprites []*pixel.Sprite
 	spritesheet := &Spritesheet{
-		Sprites: sprites,
-		Matrix:  pixel.IM,
+		sprites: sprites,
+		matrix:  pixel.IM,
 	}
 	return spritesheet
 }
@@ -32,7 +40,7 @@ func LoadSprite(path string) *pixel.Sprite {
 
 //useful if choosing to create a spritesheet from individual sprite
 func (s *Spritesheet) AddSprite(sprite *pixel.Sprite) {
-	s.Sprites = append(s.Sprites, sprite)
+	s.sprites = append(s.sprites, sprite)
 }
 
 //parse a spritesheet based on a standard width and height
@@ -60,8 +68,6 @@ func LoadSpritesheet(path string, frame pixel.Rect, scale float64) *Spritesheet 
 			sprites = append(sprites, sprite)
 		}
 	}
-
-	//fmt.Printf("len: %d", len(sprites))
 	matrix := pixel.IM.Scaled(pixel.V(0, 0), scale)
-	return &Spritesheet{Sprites: sprites, Matrix: matrix}
+	return &Spritesheet{sprites: sprites, matrix: matrix}
 }

@@ -16,8 +16,8 @@ func (sm *SoundManager) asyncPlay(names ...string) {
 	var streamers []beep.Streamer
 	for _, sound := range sm.Sounds {
 		for _, name := range names {
-			if strings.EqualFold(sound.Name, name) {
-				buffer := sound.Buffer
+			if strings.EqualFold(sound.name, name) {
+				buffer := sound.buffer
 				streamer := buffer.Streamer(0, buffer.Len())
 				format := buffer.Format()
 				streamers = append(streamers, streamer)

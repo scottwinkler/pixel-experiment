@@ -17,23 +17,22 @@ func NewAnimationManager(animations []*Animation) *AnimationManager {
 
 	//add reference to animation manager for each animation
 	for _, animation := range animations {
-		animation.AnimationManager = animationManager
+		animation.animationManager = animationManager
 	}
 	return animationManager
 }
 func (am *AnimationManager) AddAnimation(animation *Animation) {
-	animation.AnimationManager = am
+	animation.animationManager = am
 	am.Animations = append(am.Animations, animation)
 }
 
 func (am *AnimationManager) Select(name string) {
-	//no need to save state if going to a new animation
-	if am.Selected != nil && !am.Selected.Loop { //&& !strings.EqualFold(am.Selected.Name, name) {
-		//fmt.Println("resetting")
+	//only reset if its not a looping animation.
+	if am.Selected != nil && !am.Selected.loop {
 		am.Selected.Reset()
 	}
 	for _, animation := range am.Animations {
-		if strings.EqualFold(animation.Name, name) {
+		if strings.EqualFold(animation.name, name) {
 			am.Selected = animation
 			am.Selected.SetPaused(false)
 		}

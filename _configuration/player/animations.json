@@ -1,0 +1,86 @@
+{
+    "Idle": {
+        "Frames": [0,1,2],
+        "Skippable": true,
+        "Loop": true,
+        "Smooth": true
+    },
+    "Wake": {
+        "Frames": [4,5,6],
+        "Skippable": false,
+        "Loop": false,
+        "Smooth": true
+    },
+    "MoveDown": {
+        "Frames": [8,9,10,11],
+        "Skippable":true,
+        "Loop": true,
+        "Smooth": true
+    },
+    "MoveRight": {
+        "Frames": [12,13,14,15],
+        "Skippable":true,
+        "Loop": true,
+        "Smooth": true
+    },
+    "MoveLeft": {
+        "Frames": [-12,-13,-14,-15],
+        "Skippable":true,
+        "Loop": true,
+        "Smooth": true
+    },
+    "MoveUp": {
+        "Frames": [16,17,18,19],
+        "Skippable":true,
+        "Loop": true,
+        "Smooth": true
+    },
+    "AttackDown": {
+        "Frames": [20,21,22,23],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": true
+    },
+    "AttackRight": {
+        "Frames": [24,25,26,27],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": true
+    },
+    "AttackLeft": {
+        "Frames": [-24,-25,-26,-27],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": true
+    },
+    "AttackUp": {
+        "Frames": [28,29,30,31],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": true
+    },
+    "HitDown": {
+        "Frames": [32,33,34],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": true
+    },
+    "HitRight": {
+        "Frames": [36,37,38],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": true
+    },
+    "HitLeft": {
+        "Frames": [-36,-37,-38],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": true
+    },
+    "HitUp": {
+        "Frames": [40,41,42],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": true
+    }
+}

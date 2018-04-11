@@ -22,6 +22,7 @@ const (
 	MATERIAL_METAL = "metal"
 )
 
+//Used for callbacks to gameobjects
 type Fn_Callback func(interface{})
 
 type GameObject interface {
@@ -60,7 +61,6 @@ func NewWorld(bounds pixel.Rect, tilemap *tilemap.Tilemap) *World {
 }
 func (w *World) UpdateGameObjects(tick int) {
 	for _, group := range w.Groups {
-		//fmt.Printf("updating group: %s", key)
 		for _, gameobject := range group {
 			gameobject.Update(tick)
 		}
@@ -159,7 +159,7 @@ func (w *World) DeleteGameObject(gameobject GameObject) {
 	for name, group := range w.Groups {
 		for i, obj := range group {
 			if strings.EqualFold(obj.Id(), gameobject.Id()) {
-				//delete this one
+				//delete this gameobject
 				new_name = name
 				new_group = append(group[:i], group[i+1:]...)
 				break
@@ -171,13 +171,9 @@ func (w *World) DeleteGameObject(gameobject GameObject) {
 
 //CircleCollision returns true if the circles collide with each other.
 func CircleCollision(v1 pixel.Vec, r1 float64, v2 pixel.Vec, r2 float64) bool {
-	//fmt.Printf("checking collisions between v1:%v(r=%f), and v2:%v(r=%f)", v1, r1, v2, r2)
 	distanceSqr := math.Pow(v2.X-v1.X, 2) + math.Pow(v2.Y-v1.Y, 2)
 	totalRadius := r1 + r2
 	totalRadiusSqr := totalRadius * totalRadius
-
-	//distanceSqr := differenceV * differenceV
-	//fmt.Printf("distanceSqr: %f,totalRadiusSqr: %f,collids:%t", distanceSqr, totalRadiusSqr, distanceSqr < totalRadiusSqr)
 	return distanceSqr < totalRadiusSqr
 }
 
@@ -189,22 +185,18 @@ func (w *World) Collides(id string, v1 pixel.Vec, r1 float64) bool {
 		return true //out of bounds!
 	}
 	tile := w.Tilemap.GetTileAtPosition(v1, "Collision")
-	if tile != nil && tile.IsCollidable {
+	if tile != nil && tile.Collidable() {
 		return true
 	}
 
 	//check if it collides with an existing game object which is not this one
-	//fmt.Println("checking collisions between circles")
 	for _, gameobjects := range w.Groups {
 		for _, gameobject := range gameobjects {
 			v2 := gameobject.V()
 			r2 := gameobject.R()
 			if !strings.EqualFold(id, gameobject.Id()) && CircleCollision(v1, r1, v2, r2) {
-
-				//fmt.Printf("id: (%s), gameobjec.Id()(%s)", id, gameobject.Id())
 				return true
 			}
-
 		}
 	}
 	return false

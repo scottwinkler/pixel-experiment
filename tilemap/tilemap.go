@@ -7,6 +7,7 @@ import (
 )
 
 type Tilemap struct {
+	//these fields need to be public because golang does not support reflection
 	TileWidth       int            `json:"tilewidth"`
 	TileHeight      int            `json:"tileheight"`
 	Orientation     string         `json:"orientation"`
@@ -16,7 +17,7 @@ type Tilemap struct {
 	Width           int            `json:"width"`
 	Height          int            `json:"height"`
 	bounds          pixel.Rect
-	LayersNameIndex map[string]int //a convenient datastructure for mapping a name of a layer to its index
+	layersNameIndex map[string]int //a convenient datastructure for mapping a name of a layer to its index
 }
 
 // initialize the tiles in the tilemap. Only needs to be run once, should never be called directly
@@ -31,7 +32,7 @@ func (tm *Tilemap) MakeTiles() {
 //useful for z-indexing
 func (tm *Tilemap) DrawLayers(t pixel.Target, names []string) {
 	for _, name := range names {
-		index := tm.LayersNameIndex[name]
+		index := tm.layersNameIndex[name]
 		tm.Layers[index].Draw(t)
 	}
 }
@@ -50,7 +51,7 @@ func (tm *Tilemap) Bounds() pixel.Rect {
 func (tm *Tilemap) GetTileset(name string) *Tileset {
 	var tileset *Tileset
 	for _, ts := range tm.Tilesets {
-		if strings.EqualFold(ts.TilesetData.Name, name) {
+		if strings.EqualFold(ts.tilesetData.Name, name) {
 			return &ts
 		}
 	}
@@ -59,9 +60,7 @@ func (tm *Tilemap) GetTileset(name string) *Tileset {
 
 //accepts a coodinate position and a layer index and returns the tile at the position, or null
 func (tm *Tilemap) GetTileAtPosition(pos pixel.Vec, layerName string) *Tile {
-	//fmt.Printf("len, %v", tm.LayersNameIndex)
-	layerIndex := tm.LayersNameIndex[layerName]
-	//fmt.Printf("len, %d", layerIndex)
+	layerIndex := tm.layersNameIndex[layerName]
 	var tile *Tile
 	x := int(pos.X)
 	y := int(pos.Y)
@@ -76,8 +75,7 @@ func (tm *Tilemap) GetTileAtPosition(pos pixel.Vec, layerName string) *Tile {
 	if tileIndex > tm.Height*tm.Width {
 		return tile
 	}
-	//fmt.Printf("layer: %d, name: %s", layerIndex, tm.Layers[layerIndex].Name)
-	return tm.Layers[layerIndex].Tiles[tileIndex]
+	return tm.Layers[layerIndex].tiles[tileIndex]
 }
 
 //delegate drawing responsbility to layers

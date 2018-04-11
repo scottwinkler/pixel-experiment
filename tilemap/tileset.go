@@ -12,14 +12,16 @@ import (
 )
 
 type Tileset struct {
+	//these fields need to be public because golang does not support reflection
 	FirstGid    int `json:"firstgid"`
-	LastGid     int
+	lastGid     int
 	Source      string `json:"source"`
-	TilesetData TilesetData
-	Batch       *pixel.Batch
+	tilesetData TilesetData
+	batch       *pixel.Batch
 }
 
 type TilesetData struct {
+	//these fields need to be public because golang does not support reflection
 	Image       string `json:"image"`
 	Source      string `json:"source"`
 	Name        string `json:"name"`
@@ -31,7 +33,7 @@ type TilesetData struct {
 	Spacing     int    `json:"spacing"`
 	Columns     int    `json:"columns"`
 	Type        string `json:"type"`
-	Picture     *pixel.Picture
+	picture     *pixel.Picture
 	TileCount   int                    `json:"tilecount"`
 	Properties  map[string]interface{} `json:"tileproperties"`
 }
@@ -51,59 +53,39 @@ func (ts *Tileset) FetchTilesetData() {
 	if err != nil {
 		panic(err)
 	}
-	tilesetData.Picture = &pic
-	ts.TilesetData = tilesetData
-	ts.LastGid = ts.FirstGid + tilesetData.TileCount - 1
-	ts.Batch = pixel.NewBatch(&pixel.TrianglesData{}, *ts.TilesetData.Picture)
+	tilesetData.picture = &pic
+	ts.tilesetData = tilesetData
+	ts.lastGid = ts.FirstGid + tilesetData.TileCount - 1
+	ts.batch = pixel.NewBatch(&pixel.TrianglesData{}, *ts.tilesetData.picture)
 }
 
 //returns true if the specified gid is in the tileset
 func (ts *Tileset) Contains(gid int) bool {
-	return gid >= ts.FirstGid && gid <= ts.LastGid
+	return gid >= ts.FirstGid && gid <= ts.lastGid
 }
 
-func (ts *Tileset) GetPropertiesForGid(gid int) map[string]interface{} {
+//get the properties for the gid
+func (ts *Tileset) GidToProperties(gid int) map[string]interface{} {
 	var properties map[string]interface{}
-	value := ts.TilesetData.Properties[strconv.Itoa(gid-1)] //something is weird about the csv data. the value is one more than it should be
-	//fmt.Printf("[gid: %d value: %v]", gid, value)
+	value := ts.tilesetData.Properties[strconv.Itoa(gid-1)] //something is weird about the csv data. the value is one more than it should be
 	if value != nil {
-
 		properties = value.(map[string]interface{})
 	}
 	return properties
 }
 
 //returns a sprite for a specified gid
-func (ts *Tileset) GetSpriteForGid(gid int) *pixel.Sprite {
-	pic := ts.TilesetData.Picture
+func (ts *Tileset) GidToSprite(gid int) *pixel.Sprite {
+	pic := ts.tilesetData.picture
 	pd := pixel.PictureDataFromPicture(*pic)
 	index := gid - ts.FirstGid
-	col := (index % ts.TilesetData.Columns) //if index=0 then i am in col=0
-	//fmt.Printf("inter value: %d", int(math.Ceil((float64(index)+1)/float64(ts.TilesetData.Columns)))-1)
-	row := int(math.Ceil((float64(index)+1)/float64(ts.TilesetData.Columns))) - 1 //if index=0 then i am in row=0
-	//fmt.Printf("index: %d, col: %d,row: %d", index, col, row)
-	minX := pd.Bounds().Min.X + float64(col*ts.TilesetData.TileWidth)
-	maxX := minX + float64(ts.TilesetData.TileWidth)
-	maxY := pd.Bounds().Max.Y - float64(row*ts.TilesetData.TileHeight)
-	minY := maxY - float64(ts.TilesetData.TileHeight)
+	col := (index % ts.tilesetData.Columns)                                       //if index=0 then i am in col=0
+	row := int(math.Ceil((float64(index)+1)/float64(ts.tilesetData.Columns))) - 1 //if index=0 then i am in row=0
+	minX := pd.Bounds().Min.X + float64(col*ts.tilesetData.TileWidth)
+	maxX := minX + float64(ts.tilesetData.TileWidth)
+	maxY := pd.Bounds().Max.Y - float64(row*ts.tilesetData.TileHeight)
+	minY := maxY - float64(ts.tilesetData.TileHeight)
 	frame := pixel.R(minX, minY, maxX, maxY)
-	//fmt.Printf("frame for gid %d is: %v", gid, frame)
 	sprite := pixel.NewSprite(*pic, frame)
 	return sprite
 }
-
-/*
-func (tileset Tileset) Draw(t pixel.Target) {
-	for i, tile := range tileset.tiles {
-		tile.spritePtr.Draw(t, tileset.tiles[i].matrix)
-	}
-}*/
-
-//draw all tiles which use this tileset together as a batch
-/*func (ts *Tileset) Draw(t pixel.Target) {
-	batch := pixel.NewBatch(&pixel.TraingleData{},ts.TilesetData.Picture)
-	for _, tile := range ts.Tiles {
-		tile.Draw(batch)
-	}
-	batch.Draw(t)
-}*/

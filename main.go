@@ -15,11 +15,11 @@ import (
 )
 
 func run() {
-	player_sound_mapping := utility.LoadJSON("./config/player_sounds_mapping.json")
+	player_sound_mapping := utility.LoadJSON("./_configuration/player/sounds.json")
 	player_sounds := sound.MappingToSounds(player_sound_mapping)
 
 	tm, _ := tilemap.ParseTiledJSON("_assets/tmx/world1.json")
-	animation_mapping := utility.LoadJSON("./config/animation_mapping.json")
+	animation_mapping := utility.LoadJSON("./_configuration/player/animations.json")
 
 	player_spritesheet := utility.LoadSpritesheet("_assets/spritesheets/chara_hero.png", pixel.R(0, 0, 48, 48), 2.0)
 	player_animations := animation.MappingToAnimations(player_spritesheet, animation_mapping)

@@ -5,6 +5,7 @@ import (
 )
 
 type TilemapLayer struct {
+	//these fields need to be public because golang does not support reflection
 	Data        []int   `json:"data"`
 	Name        string  `json:"name"`
 	X           int     `json:"x"`
@@ -13,18 +14,18 @@ type TilemapLayer struct {
 	Height      int     `json:"height"` //number of tiles high
 	Opacity     float64 `json:"opacity"`
 	Visible     bool    `json:"visible"`
-	Tiles       []*Tile
-	Tilemap     *Tilemap
-	BatchGroups map[string][]*Tile //a useful mapping of tileset names to tiles, for more efficient drawing
+	tiles       []*Tile
+	tilemap     *Tilemap
+	batchGroups map[string][]*Tile //a useful mapping of tileset names to tiles, for more efficient drawing
 }
 
 //insantiate tiles from tileset data
 func (l *TilemapLayer) MakeTiles(tm *Tilemap) *TilemapLayer {
 	tileSetGroups := make(map[string][]*Tile)
 	for _, ts := range tm.Tilesets {
-		tileSetGroups[ts.TilesetData.Name] = []*Tile{}
+		tileSetGroups[ts.tilesetData.Name] = []*Tile{}
 	}
-	l.Tilemap = tm
+	l.tilemap = tm
 	tileHeight := tm.TileHeight
 	tileWidth := tm.TileWidth
 	var tiles []*Tile
@@ -46,11 +47,11 @@ func (l *TilemapLayer) MakeTiles(tm *Tilemap) *TilemapLayer {
 				}
 
 				if tileset.Contains(gid) {
-					tileSetName = tileset.TilesetData.Name
+					tileSetName = tileset.tilesetData.Name
 					if l.Visible { //necessary to hide collision tiles
-						sprite = tileset.GetSpriteForGid(gid)
+						sprite = tileset.GidToSprite(gid)
 					}
-					properties = tileset.GetPropertiesForGid(gid)
+					properties = tileset.GidToProperties(gid)
 					break
 				}
 			}
@@ -65,17 +66,17 @@ func (l *TilemapLayer) MakeTiles(tm *Tilemap) *TilemapLayer {
 			index++
 		}
 	}
-	l.BatchGroups = tileSetGroups
-	l.Tiles = tiles
+	l.batchGroups = tileSetGroups
+	l.tiles = tiles
 	return l
 }
 
 func (l *TilemapLayer) Draw(t pixel.Target) {
 
-	for name, tiles := range l.BatchGroups {
-		ts := l.Tilemap.GetTileset(name)
+	for name, tiles := range l.batchGroups {
+		ts := l.tilemap.GetTileset(name)
 
-		batch := ts.Batch
+		batch := ts.batch
 		batch.Clear()
 		for _, tile := range tiles {
 			tile.Draw(batch)

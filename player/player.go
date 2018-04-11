@@ -14,14 +14,14 @@ import (
 
 type Player struct {
 	id               string
-	Sprite           *pixel.Sprite
+	sprite           *pixel.Sprite
 	speed            float64
 	v                pixel.Vec
 	r                float64 //used for collider calculations
-	Matrix           pixel.Matrix
-	AnimationManager *animation.AnimationManager
-	SoundManager     *sound.SoundManager
-	World            *world.World
+	matrix           pixel.Matrix
+	animationManager *animation.AnimationManager
+	soundManager     *sound.SoundManager
+	world            *world.World
 	direction        int
 }
 
@@ -29,21 +29,21 @@ func NewPlayer(v pixel.Vec, r float64, animations []*animation.Animation, sounds
 	animationManager := animation.NewAnimationManager(animations)
 	soundManager := sound.NewSoundManager(sounds)
 	animationManager.Select("Idle")
-	sprite := animationManager.Selected.Spritesheet.Sprites[animationManager.Selected.Frames[0]]
+	sprite := animationManager.Selected.Next()
 	matrix := pixel.Matrix(pixel.IM.Moved(v))
 	//radius := float64(world.Tilemap.TileHeight / 3) //not a great solution for rectangles
 	//fmt.Printf("r: %f", radius)
 	id := xid.New().String()
 	player := &Player{
 		id:               id,
-		Sprite:           sprite,
+		sprite:           sprite,
 		speed:            3, //default
 		v:                v,
 		r:                r,
-		Matrix:           matrix,
-		AnimationManager: animationManager,
-		SoundManager:     soundManager,
-		World:            w,
+		matrix:           matrix,
+		animationManager: animationManager,
+		soundManager:     soundManager,
+		world:            w,
 		direction:        world.DOWN,
 	}
 	return player
@@ -79,23 +79,23 @@ func (p *Player) Move(direction int) {
 	switch direction {
 	case world.LEFT:
 		nextPos.X -= p.speed
-		p.AnimationManager.Select("MoveLeft")
+		p.animationManager.Select("MoveLeft")
 	case world.RIGHT:
 		nextPos.X += p.speed
-		p.AnimationManager.Select("MoveRight")
+		p.animationManager.Select("MoveRight")
 	case world.DOWN:
 		nextPos.Y -= p.speed
-		p.AnimationManager.Select("MoveDown")
+		p.animationManager.Select("MoveDown")
 	case world.UP:
 		nextPos.Y += p.speed
-		p.AnimationManager.Select("MoveUp")
+		p.animationManager.Select("MoveUp")
 	}
-	if !p.World.Collides(p.Id(), nextPos, p.r) {
+	if !p.world.Collides(p.Id(), nextPos, p.r) {
 		p.v = nextPos
 	}
 	//update matrix and collision circle
 	matrix := pixel.IM.Moved(p.v)
-	p.Matrix = matrix
+	p.matrix = matrix
 }
 
 func (p *Player) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
@@ -123,19 +123,19 @@ func (p *Player) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 		if relativeDir == s.Direction() {
 			switch p.direction {
 			case world.LEFT:
-				p.AnimationManager.Select("HitLeft")
+				p.animationManager.Select("HitLeft")
 				cb(p)
 				return true
 			case world.RIGHT:
-				p.AnimationManager.Select("HitRight")
+				p.animationManager.Select("HitRight")
 				cb(p)
 				return true
 			case world.DOWN:
-				p.AnimationManager.Select("HitDown")
+				p.animationManager.Select("HitDown")
 				cb(p)
 				return true
 			case world.UP:
-				p.AnimationManager.Select("HitUp")
+				p.animationManager.Select("HitUp")
 				cb(p)
 				return true
 			}
@@ -149,13 +149,13 @@ func (p *Player) Attack(direction int) {
 	//p.SoundManager.Play("attack1")
 	switch direction {
 	case world.LEFT:
-		p.AnimationManager.Select("AttackLeft")
+		p.animationManager.Select("AttackLeft")
 	case world.RIGHT:
-		p.AnimationManager.Select("AttackRight")
+		p.animationManager.Select("AttackRight")
 	case world.DOWN:
-		p.AnimationManager.Select("AttackDown")
+		p.animationManager.Select("AttackDown")
 	case world.UP:
-		p.AnimationManager.Select("AttackUp")
+		p.animationManager.Select("AttackUp")
 	}
 
 	//create callback for playing the appropriate sound effect
@@ -167,18 +167,18 @@ func (p *Player) Attack(direction int) {
 
 			switch material {
 			case world.MATERIAL_FLESH:
-				p.SoundManager.Play("humanattacking"+num, "swordhitflesh")
+				p.soundManager.Play("humanattacking"+num, "swordhitflesh")
 			case world.MATERIAL_METAL:
-				p.SoundManager.Play("humanattacking"+num, "swordhitmetal")
+				p.soundManager.Play("humanattacking"+num, "swordhitmetal")
 			case world.MATERIAL_WOOD:
-				p.SoundManager.Play("swordhitwood")
+				p.soundManager.Play("swordhitwood")
 			}
 		} else {
 			//	fmt.Println("playing swordswing")
-			p.SoundManager.Play("humanattacking"+num, "swordswing")
+			p.soundManager.Play("humanattacking"+num, "swordswing")
 		}
 	}
-	p.World.HitEvent(p, cb)
+	p.world.HitEvent(p, cb)
 }
 
 func (p *Player) Update(tick int) {
@@ -188,12 +188,12 @@ func (p *Player) Update(tick int) {
 		camZoom = 1.0
 	)
 	//fmt.Println("-----------------")
-	win := p.World.Window
+	win := p.world.Window
 	cam := pixel.IM.Scaled(camPos, camZoom).Moved(win.Bounds().Center().Sub(camPos))
 	win.SetMatrix(cam)
 
 	//fmt.Println("deciding to select one...")
-	if p.AnimationManager.Selected.Skippable() || p.AnimationManager.Selected.Done() { //only listen to new events if the current animation is skippable or done playing
+	if p.animationManager.Selected.Skippable() || p.animationManager.Selected.Done() { //only listen to new events if the current animation is skippable or done playing
 		//fmt.Printf("current animation done: %t", p.AnimationManager.Selected.Done())
 		if win.Pressed(pixelgl.KeyLeft) || win.Pressed(pixelgl.KeyA) {
 			p.Move(world.LEFT)
@@ -210,20 +210,20 @@ func (p *Player) Update(tick int) {
 			p.Attack(dir)
 
 		} else {
-			p.AnimationManager.Select("Idle")
+			p.animationManager.Select("Idle")
 		}
 
 		//fmt.Println("drawing sprite")
 		//fmt.Println("-----------------")
 	}
 	if tick == 0 {
-		p.Sprite = p.AnimationManager.Selected.Next()
+		p.sprite = p.animationManager.Selected.Next()
 	}
 	p.Draw()
 }
 func (p *Player) Draw() {
-	animation := p.AnimationManager.Selected
+	animation := p.animationManager.Selected
 	//chained methods so that we first scale by spritesheet size, then by reflection, then by position
-	matrix := animation.Matrix.Chained(p.Matrix)
-	p.Sprite.Draw(p.World.Window, matrix)
+	matrix := animation.Matrix().Chained(p.matrix)
+	p.sprite.Draw(p.world.Window, matrix)
 }

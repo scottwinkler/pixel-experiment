@@ -11,13 +11,13 @@ import (
 
 type Entity struct {
 	id               string
-	Sprite           *pixel.Sprite
+	sprite           *pixel.Sprite
 	speed            float64
 	v                pixel.Vec
 	r                float64 //used for collider calculations
-	Matrix           pixel.Matrix
-	AnimationManager *animation.AnimationManager
-	World            *world.World
+	matrix           pixel.Matrix
+	animationManager *animation.AnimationManager
+	world            *world.World
 	direction        int
 	health           float64
 }
@@ -25,19 +25,18 @@ type Entity struct {
 func NewEntity(v pixel.Vec, r float64, animations []*animation.Animation, w *world.World) *Entity {
 	animationManager := animation.NewAnimationManager(animations)
 	animationManager.Select("Idle") //every entity should have an idle frame
-	sprite := animationManager.Selected.Spritesheet.Sprites[animationManager.Selected.Frames[0]]
+	sprite := animationManager.Selected.Next()
 	matrix := pixel.Matrix(pixel.IM.Moved(v))
-	//radius := float64(world.Tilemap.TileHeight / 3) //not a great solution for rectangles
 	id := xid.New().String()
 	entity := &Entity{
 		id:               id,
-		Sprite:           sprite,
+		sprite:           sprite,
 		speed:            3, //default
 		v:                v,
 		r:                r,
-		Matrix:           matrix,
-		AnimationManager: animationManager,
-		World:            w,
+		matrix:           matrix,
+		animationManager: animationManager,
+		world:            w,
 		direction:        world.DOWN,
 		health:           15.0,
 	}
@@ -66,7 +65,7 @@ func (e *Entity) Direction() int {
 
 func (e *Entity) Kill() {
 	fmt.Println("killing...")
-	e.World.DeleteGameObject(e)
+	e.world.DeleteGameObject(e)
 }
 
 func (e *Entity) Material() string {
@@ -86,23 +85,20 @@ func (e *Entity) Move(direction int) {
 		nextPos.Y += e.speed
 	}
 	e.direction = direction
-	if !e.World.Collides(e.Id(), nextPos, e.r) {
+	if !e.world.Collides(e.Id(), nextPos, e.r) {
 		e.v = nextPos
 	}
 	//update matrix and collision circle
 	matrix := pixel.IM.Moved(e.v)
-	e.Matrix = matrix
+	e.matrix = matrix
 }
 
 func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 	//am i near enoguh to be affected?
 	//draw a slightly bigger circle than the collision circle
 	//so that the hit box is reasonable
-
-	//fmt.Printf("handling hit from: %s", s.Id())
 	hitFactor := 1.2
 	if world.CircleCollision(e.v, e.r*hitFactor, s.V(), s.R()+s.Speed()) {
-		//fmt.Println("collided")
 		//where am i relative to the source?
 		relativePos := e.v.Sub(s.V())
 		top := relativePos.Y >= relativePos.X    //above line y=x?
@@ -120,45 +116,23 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 		}
 		//is the source facing the right direction?
 		if relativeDir == s.Direction() {
-			//fmt.Println("direction correct")
 			switch e.direction {
 			case world.LEFT:
-				e.AnimationManager.Select("HitLeft")
-				e.health -= 3
-				fmt.Println(e.health)
-				if e.health <= 0 {
-					e.Kill()
-				}
-				cb(e)
-				return true
+				e.animationManager.Select("HitLeft")
 			case world.RIGHT:
-				e.AnimationManager.Select("HitRight")
-				e.health -= 3
-				fmt.Println(e.health)
-				if e.health <= 0 {
-					e.Kill()
-				}
-				cb(e)
-				return true
+				e.animationManager.Select("HitRight")
 			case world.DOWN:
-				e.AnimationManager.Select("HitDown")
-				e.health -= 3
-				fmt.Println(e.health)
-				if e.health <= 0 {
-					e.Kill()
-				}
-				cb(e)
-				return true
+				e.animationManager.Select("HitDown")
 			case world.UP:
-				e.AnimationManager.Select("HitUp")
-				e.health -= 3
-				fmt.Println(e.health)
-				if e.health <= 0 {
-					e.Kill()
-				}
-				cb(e)
-				return true
+				e.animationManager.Select("HitUp")
 			}
+			e.health -= 3
+			fmt.Println(e.health)
+			if e.health <= 0 {
+				e.Kill()
+			}
+			cb(e)
+			return true
 		}
 	}
 
@@ -167,17 +141,17 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 
 func (e *Entity) Update(tick int) {
 	//win := e.World.Window
-	if e.AnimationManager.Selected.Skippable() || e.AnimationManager.Selected.Done() { //only listen to new events if the current animation is skippable or done playing
-		e.AnimationManager.Select("Idle")
+	if e.animationManager.Selected.Skippable() || e.animationManager.Selected.Done() { //only listen to new events if the current animation is skippable or done playing
+		e.animationManager.Select("Idle")
 	}
 	if tick == 0 {
-		e.Sprite = e.AnimationManager.Selected.Next()
+		e.sprite = e.animationManager.Selected.Next()
 	}
 	e.Draw()
 }
 func (e *Entity) Draw() {
-	animation := e.AnimationManager.Selected
+	animation := e.animationManager.Selected
 	//chained methods so that we first scale by spritesheet size, then by reflection, then by position
-	matrix := animation.Matrix.Chained(e.Matrix)
-	e.Sprite.Draw(e.World.Window, matrix)
+	matrix := animation.Matrix().Chained(e.matrix)
+	e.sprite.Draw(e.world.Window, matrix)
 }

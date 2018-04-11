@@ -12,8 +12,8 @@ import (
 )
 
 type Sound struct {
-	Name   string
-	Buffer *beep.Buffer
+	name   string
+	buffer *beep.Buffer
 }
 
 //utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
@@ -31,7 +31,6 @@ func MappingToSounds(mapping map[string]interface{}) []*Sound {
 			sounds = append(sounds, NewSound(name, buffer))
 		}
 	}
-	//fmt.Println(len(sounds))
 	return sounds
 }
 
@@ -59,8 +58,8 @@ func decode(path string) (beep.StreamSeekCloser, beep.Format) {
 //create a new sound from a file
 func NewSound(name string, buffer *beep.Buffer) *Sound {
 	sound := Sound{
-		Name:   name,
-		Buffer: buffer,
+		name:   name,
+		buffer: buffer,
 	}
 	return &sound
 }

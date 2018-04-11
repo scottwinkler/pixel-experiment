@@ -34,6 +34,6 @@ func ParseTiledJSON(path string) (*Tilemap, error) {
 	tilemap.Tilesets = new_tilesets
 	tilemap.MakeTiles()
 	tilemap.SetBounds(pixel.R(0, 0, float64(tilemap.TileWidth*tilemap.Width), float64(tilemap.TileHeight*tilemap.Height)))
-	tilemap.LayersNameIndex = layersNameIndex
+	tilemap.layersNameIndex = layersNameIndex
 	return &tilemap, nil
 }
