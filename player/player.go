@@ -1,6 +1,9 @@
 package player
 
 import (
+	"math/rand"
+	"strconv"
+
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/rs/xid"
@@ -66,6 +69,10 @@ func (p *Player) Direction() int {
 	return p.direction
 }
 
+func (p *Player) Material() string {
+	return world.MATERIAL_FLESH
+}
+
 func (p *Player) Move(direction int) {
 	nextPos := pixel.V(p.v.X, p.v.Y)
 	p.direction = direction
@@ -91,7 +98,7 @@ func (p *Player) Move(direction int) {
 	p.Matrix = matrix
 }
 
-func (p *Player) HandleHit(s world.GameObject) {
+func (p *Player) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 	//am i near enoguh to be affected?
 	//draw a slightly bigger circle than the collision circle
 	//so that the hit box is reasonable
@@ -117,20 +124,29 @@ func (p *Player) HandleHit(s world.GameObject) {
 			switch p.direction {
 			case world.LEFT:
 				p.AnimationManager.Select("HitLeft")
+				cb(p)
+				return true
 			case world.RIGHT:
 				p.AnimationManager.Select("HitRight")
+				cb(p)
+				return true
 			case world.DOWN:
 				p.AnimationManager.Select("HitDown")
+				cb(p)
+				return true
 			case world.UP:
 				p.AnimationManager.Select("HitUp")
+				cb(p)
+				return true
 			}
 		}
 	}
+	return false
 }
 
 func (p *Player) Attack(direction int) {
 	p.direction = direction
-	p.SoundManager.Play("attack1")
+	//p.SoundManager.Play("attack1")
 	switch direction {
 	case world.LEFT:
 		p.AnimationManager.Select("AttackLeft")
@@ -141,7 +157,28 @@ func (p *Player) Attack(direction int) {
 	case world.UP:
 		p.AnimationManager.Select("AttackUp")
 	}
-	p.World.HitEvent(p)
+
+	//create callback for playing the appropriate sound effect
+	cb := func(obj interface{}) {
+		num := strconv.Itoa(rand.Intn(2) + 1) //for playing a random attack sound
+		if obj != nil {
+			gameObject := obj.(world.GameObject)
+			material := gameObject.Material()
+
+			switch material {
+			case world.MATERIAL_FLESH:
+				p.SoundManager.Play("humanattacking"+num, "swordhitflesh")
+			case world.MATERIAL_METAL:
+				p.SoundManager.Play("humanattacking"+num, "swordhitmetal")
+			case world.MATERIAL_WOOD:
+				p.SoundManager.Play("swordhitwood")
+			}
+		} else {
+			//	fmt.Println("playing swordswing")
+			p.SoundManager.Play("humanattacking"+num, "swordswing")
+		}
+	}
+	p.World.HitEvent(p, cb)
 }
 
 func (p *Player) Update(tick int) {

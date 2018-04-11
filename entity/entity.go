@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"fmt"
+
 	"github.com/faiface/pixel"
 	"github.com/rs/xid"
 	"github.com/scottwinkler/pixel-experiment/animation"
@@ -17,6 +19,7 @@ type Entity struct {
 	AnimationManager *animation.AnimationManager
 	World            *world.World
 	direction        int
+	health           float64
 }
 
 func NewEntity(v pixel.Vec, r float64, animations []*animation.Animation, w *world.World) *Entity {
@@ -36,6 +39,7 @@ func NewEntity(v pixel.Vec, r float64, animations []*animation.Animation, w *wor
 		AnimationManager: animationManager,
 		World:            w,
 		direction:        world.DOWN,
+		health:           15.0,
 	}
 	return entity
 }
@@ -60,6 +64,15 @@ func (e *Entity) Direction() int {
 	return e.direction
 }
 
+func (e *Entity) Kill() {
+	fmt.Println("killing...")
+	e.World.DeleteGameObject(e)
+}
+
+func (e *Entity) Material() string {
+	return world.MATERIAL_FLESH
+}
+
 func (e *Entity) Move(direction int) {
 	nextPos := pixel.V(e.v.X, e.v.Y)
 	switch direction {
@@ -81,7 +94,7 @@ func (e *Entity) Move(direction int) {
 	e.Matrix = matrix
 }
 
-func (e *Entity) HandleHit(s world.GameObject) {
+func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 	//am i near enoguh to be affected?
 	//draw a slightly bigger circle than the collision circle
 	//so that the hit box is reasonable
@@ -111,15 +124,45 @@ func (e *Entity) HandleHit(s world.GameObject) {
 			switch e.direction {
 			case world.LEFT:
 				e.AnimationManager.Select("HitLeft")
+				e.health -= 3
+				fmt.Println(e.health)
+				if e.health <= 0 {
+					e.Kill()
+				}
+				cb(e)
+				return true
 			case world.RIGHT:
 				e.AnimationManager.Select("HitRight")
+				e.health -= 3
+				fmt.Println(e.health)
+				if e.health <= 0 {
+					e.Kill()
+				}
+				cb(e)
+				return true
 			case world.DOWN:
 				e.AnimationManager.Select("HitDown")
+				e.health -= 3
+				fmt.Println(e.health)
+				if e.health <= 0 {
+					e.Kill()
+				}
+				cb(e)
+				return true
 			case world.UP:
 				e.AnimationManager.Select("HitUp")
+				e.health -= 3
+				fmt.Println(e.health)
+				if e.health <= 0 {
+					e.Kill()
+				}
+				cb(e)
+				return true
 			}
 		}
 	}
+
+	return false
 }
 
 func (e *Entity) Update(tick int) {

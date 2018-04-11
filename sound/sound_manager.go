@@ -1,10 +1,10 @@
 package sound
 
 import (
-	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/faiface/beep"
 	"github.com/faiface/beep/speaker"
 )
 
@@ -12,24 +12,26 @@ type SoundManager struct {
 	Sounds []*Sound
 }
 
-func (sm *SoundManager) Play(name string) {
-	for _, group := range sm.Sounds {
-		for _, sound := range group {
+func (sm *SoundManager) asyncPlay(names ...string) {
+	var streamers []beep.Streamer
+	for _, sound := range sm.Sounds {
+		for _, name := range names {
 			if strings.EqualFold(sound.Name, name) {
-				streamer, format := sound.Decode()
+				buffer := sound.Buffer
+				streamer := buffer.Streamer(0, buffer.Len())
+				format := buffer.Format()
+				streamers = append(streamers, streamer)
+				//this could cause problems if sampling rates are same for both
 				speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
-				speaker.Play(streamer)
 			}
 		}
 	}
+	speaker.Play(streamers...)
+	//fmt.Println("finished playing")
 }
 
-func (sm *SoundManager) PlayRandom(group string) {
-	soundsGroup := sm.Sounds[group]
-	rand.Seed(time.Now().Unix())
-	index := rand.Intn(len(soundsGroup) - 1)
-	name := soundsGroup[index].Name
-	sm.Play(name)
+func (sm *SoundManager) Play(names ...string) {
+	go sm.asyncPlay(names...) //run asynchronously
 }
 
 func NewSoundManager(sounds []*Sound) *SoundManager {

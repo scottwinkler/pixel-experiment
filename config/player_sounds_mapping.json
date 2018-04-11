@@ -2,25 +2,33 @@
     "Sword": [
         {
             "Name": "swordhitmetal",
-            "Path": "_assets/sounds/Master Bounces/Weapon & Equipment/swordhitmetal_sound.wav"
+            "Path": "_assets/sounds/MasterBounces/Weapon&Equipment/swordhitmetal_sound.flac"
         },
         {
             "Name": "swordhitflesh",
-            "Path": "_assets/sounds/Master Bounces/Weapon & Equipment/swordhitflesh_sound.wav"
+            "Path": "_assets/sounds/MasterBounces/Weapon&Equipment/swordhitflesh_sound.flac"
         },
         {
             "Name": "swordhitwood",
-            "Path": "_assets/sounds/Master Bounces/Weapon & Equipment/swordhitwood_sound.wav"
+            "Path": "_assets/sounds/MasterBounces/Weapon&Equipment/swordhitwood_sound.flac"
         },
         {
             "Name": "swordswing",
-            "Path": "_assets/sounds/Master Bounces/Weapon & Equipment/swordswing_sound.wav"
+            "Path": "_assets/sounds/MasterBounces/Weapon&Equipment/swordswing_sound.flac"
         }
     ],
     "Attack": [
         {
             "Name": "humanattacking1",
-            "Path": ""
+            "Path": "_assets/sounds/MasterBounces/CreatureSFX/humanattacking1_sound.flac"
+        },
+        {
+            "Name": "humanattacking2",
+            "Path": "_assets/sounds/MasterBounces/CreatureSFX/humanattacking2_sound.flac"
+        },
+        {
+            "Name": "humanattacking3",
+            "Path": "_assets/sounds/MasterBounces/CreatureSFX/humanattacking3_sound.flac"
         }
     ]
 }

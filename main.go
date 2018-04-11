@@ -15,13 +15,8 @@ import (
 )
 
 func run() {
-	var player_sounds []*sound.Sound
-	attackSound1 := sound.NewSound("attack1", "_assets/sounds/melee-attack-1.flac")
-	player_sounds = append(player_sounds, attackSound1)
-	attackSound2 := sound.NewSound("attack2", "_assets/sounds/melee-attack-2.flac")
-	player_sounds = append(player_sounds, attackSound2)
-	attackSound3 := sound.NewSound("attack3", "_assets/sounds/melee-attack-3.flac")
-	player_sounds = append(player_sounds, attackSound3)
+	player_sound_mapping := utility.LoadJSON("./config/player_sounds_mapping.json")
+	player_sounds := sound.MappingToSounds(player_sound_mapping)
 
 	tm, _ := tilemap.ParseTiledJSON("_assets/tmx/world1.json")
 	animation_mapping := utility.LoadJSON("./config/animation_mapping.json")

@@ -13,20 +13,26 @@ import (
 
 //Directions
 const (
-	LEFT  = 0
-	RIGHT = 1
-	DOWN  = 2
-	UP    = 3
+	LEFT           = 0
+	RIGHT          = 1
+	DOWN           = 2
+	UP             = 3
+	MATERIAL_WOOD  = "wood"
+	MATERIAL_FLESH = "flesh"
+	MATERIAL_METAL = "metal"
 )
+
+type Fn_Callback func(interface{})
 
 type GameObject interface {
 	Update(int)
 	Id() string
-	HandleHit(GameObject)
+	HandleHit(GameObject, Fn_Callback) bool
 	Speed() float64
 	Direction() int
 	V() pixel.Vec
 	R() float64
+	Material() string
 }
 
 type World struct {
@@ -61,15 +67,24 @@ func (w *World) UpdateGameObjects(tick int) {
 	}
 }
 
-func (w *World) HitEvent(source interface{}) {
+//could be better done with channels
+func (w *World) HitEvent(source interface{}, callback Fn_Callback) {
 	sourceGameObject := source.(GameObject)
+	hitCount := 0
 	for _, group := range w.Groups {
 		for _, gameobject := range group {
 			//don't notify the source of the hit
 			if !strings.EqualFold(gameobject.Id(), sourceGameObject.Id()) {
-				gameobject.HandleHit(sourceGameObject) //leave it to the gameobjects to decide what to do
+				if gameobject.HandleHit(sourceGameObject, callback) { //leave it to the gameobjects to decide what to do
+					hitCount++
+				}
 			}
 		}
+	}
+	//fmt.Printf("hitcount: %d", hitCount)
+	if hitCount == 0 {
+		//fmt.Println("a miss")
+		callback(nil)
 	}
 }
 
@@ -136,6 +151,22 @@ func (w *World) Resize() {
 
 func (w *World) AddGameObject(group string, gameobject GameObject) {
 	w.Groups[group] = append(w.Groups[group], gameobject)
+}
+
+func (w *World) DeleteGameObject(gameobject GameObject) {
+	var new_name string
+	var new_group []GameObject
+	for name, group := range w.Groups {
+		for i, obj := range group {
+			if strings.EqualFold(obj.Id(), gameobject.Id()) {
+				//delete this one
+				new_name = name
+				new_group = append(group[:i], group[i+1:]...)
+				break
+			}
+		}
+	}
+	w.Groups[new_name] = new_group
 }
 
 //CircleCollision returns true if the circles collide with each other.

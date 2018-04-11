@@ -1,6 +1,7 @@
 package sound
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/faiface/beep"
@@ -11,52 +12,55 @@ import (
 )
 
 type Sound struct {
-	Name      string
-	Path      string
-	Extension string
+	Name   string
+	Buffer *beep.Buffer
 }
 
 //utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
 func MappingToSounds(mapping map[string]interface{}) []*Sound {
-	var animations []*Animation
-	for key, value := range mapping {
-		attributes := value.(map[string]interface{})
-		framesArr := attributes["Frames"].([]interface{})
-		var frames []int
-		for _, frame := range framesArr {
-			frames = append(frames, int(frame.(float64)))
+	var sounds []*Sound
+	for _, value := range mapping {
+		arr := value.([]interface{})
+		for _, obj := range arr {
+			attributes := obj.(map[string]interface{})
+			name := attributes["Name"].(string)
+			path := attributes["Path"].(string)
+			streamer, format := decode(path)
+			buffer := beep.NewBuffer(format)
+			buffer.Append(streamer)
+			sounds = append(sounds, NewSound(name, buffer))
 		}
-		loop := attributes["Loop"].(bool)
-		skippable := attributes["Skippable"].(bool)
-		animations = append(animations, NewAnimation(spritesheet, key, frames, loop, skippable))
 	}
-	return animations
+	//fmt.Println(len(sounds))
+	return sounds
 }
 
-func (s *Sound) Decode() (beep.StreamSeekCloser, beep.Format) {
-	file := utility.LoadFile(s.Path)
+func decode(path string) (beep.StreamSeekCloser, beep.Format) {
+	file := utility.LoadFile(path)
 	var streamer beep.StreamSeekCloser
 	var format beep.Format
-	switch s.Extension {
+	parts := strings.Split(path, ".")
+	extension := parts[len(parts)-1]
+	var err error
+	switch extension {
 	case "wav":
-		streamer, format, _ = wav.Decode(file)
+		streamer, format, err = wav.Decode(file)
 	case "flac":
-		streamer, format, _ = flac.Decode(file)
+		streamer, format, err = flac.Decode(file)
 	case "mp3":
-		streamer, format, _ = mp3.Decode(file)
+		streamer, format, err = mp3.Decode(file)
+	}
+	if err != nil {
+		fmt.Printf("error: %v", err)
 	}
 	return streamer, format
 }
 
 //create a new sound from a file
-func NewSound(name string, path string) *Sound {
-	parts := strings.Split(path, ".")
-	extension := parts[len(parts)-1]
-
+func NewSound(name string, buffer *beep.Buffer) *Sound {
 	sound := Sound{
-		Name:      name,
-		Path:      path,
-		Extension: extension,
+		Name:   name,
+		Buffer: buffer,
 	}
 	return &sound
 }

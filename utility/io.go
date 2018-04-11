@@ -12,7 +12,13 @@ import (
 )
 
 func LoadFile(path string) *os.File {
-	file, _ := os.Open(path)
+	//cwd, _ := os.Getwd()
+	//fmt.Printf("cwd %s", cwd)
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 	return file
 }
 
