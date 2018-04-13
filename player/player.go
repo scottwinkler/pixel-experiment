@@ -7,9 +7,9 @@ import (
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/rs/xid"
-	"github.com/scottwinkler/pixel-experiment/animation"
-	"github.com/scottwinkler/pixel-experiment/sound"
-	"github.com/scottwinkler/pixel-experiment/world"
+	"github.com/scottwinkler/simple-rpg/animation"
+	"github.com/scottwinkler/simple-rpg/sound"
+	"github.com/scottwinkler/simple-rpg/world"
 )
 
 type Player struct {
@@ -29,10 +29,8 @@ func NewPlayer(v pixel.Vec, r float64, animations []*animation.Animation, sounds
 	animationManager := animation.NewAnimationManager(animations)
 	soundManager := sound.NewSoundManager(sounds)
 	animationManager.Select("Idle")
-	sprite := animationManager.Selected.Next()
+	sprite := animationManager.Selected.Next(0)
 	matrix := pixel.Matrix(pixel.IM.Moved(v))
-	//radius := float64(world.Tilemap.TileHeight / 3) //not a great solution for rectangles
-	//fmt.Printf("r: %f", radius)
 	id := xid.New().String()
 	player := &Player{
 		id:               id,
@@ -212,13 +210,8 @@ func (p *Player) Update(tick int) {
 		} else {
 			p.animationManager.Select("Idle")
 		}
-
-		//fmt.Println("drawing sprite")
-		//fmt.Println("-----------------")
 	}
-	if tick == 0 {
-		p.sprite = p.animationManager.Selected.Next()
-	}
+	p.sprite = p.animationManager.Selected.Next(tick)
 	p.Draw()
 }
 func (p *Player) Draw() {

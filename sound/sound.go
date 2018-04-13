@@ -8,7 +8,7 @@ import (
 	"github.com/faiface/beep/flac"
 	"github.com/faiface/beep/mp3"
 	"github.com/faiface/beep/wav"
-	"github.com/scottwinkler/pixel-experiment/utility"
+	"github.com/scottwinkler/simple-rpg/utility"
 )
 
 type Sound struct {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/faiface/pixel"
 
-	"github.com/scottwinkler/pixel-experiment/utility"
+	"github.com/scottwinkler/simple-rpg/utility"
 )
 
 type Tileset struct {

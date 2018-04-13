@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/faiface/pixel"
-	"github.com/scottwinkler/pixel-experiment/utility"
+	"github.com/scottwinkler/simple-rpg/utility"
 )
 
 type Animation struct {
@@ -17,6 +17,7 @@ type Animation struct {
 	loop             bool
 	paused           bool
 	skippable        bool
+	frameRate        int
 	done             bool
 }
 
@@ -31,6 +32,9 @@ func (a *Animation) Spritesheet() *utility.Spritesheet {
 }
 
 //utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
+
+//idea: instead of passing the spritesheet explicitly, if the mapping contains a reference to the path of the spritesheet,
+//then we can do this automatically
 func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]interface{}) []*Animation {
 	var animations []*Animation
 	for name, value := range mapping {
@@ -43,12 +47,13 @@ func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]in
 		loop := attributes["Loop"].(bool)
 		skippable := attributes["Skippable"].(bool)
 		smooth := attributes["Smooth"].(bool)
-		animations = append(animations, NewAnimation(spritesheet, name, frames, loop, skippable, smooth))
+		frameRate := int(attributes["FrameRate"].(float64)) //cast to int because ain't dealing with floating point nonsense
+		animations = append(animations, NewAnimation(spritesheet, name, frames, loop, skippable, smooth, frameRate))
 	}
 	return animations
 }
 
-func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int, loop bool, skippable bool, smooth bool) *Animation {
+func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int, loop bool, skippable bool, smooth bool, frameRate int) *Animation {
 	if smooth {
 		//smooth animation by padding it with frames appended in reverse order
 		for i := len(frames) - 1; i > 0; i-- {
@@ -65,6 +70,7 @@ func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int, l
 		paused:      true,
 		matrix:      spritesheet.Matrix(),
 		skippable:   skippable,
+		frameRate:   frameRate,
 		done:        false,
 	}
 	return &animation
@@ -91,9 +97,9 @@ func (a *Animation) Done() bool {
 	return a.done
 }
 
-func (a *Animation) Next() *pixel.Sprite {
+func (a *Animation) Next(tick int) *pixel.Sprite {
 	var frame int
-	if !a.paused {
+	if !a.paused && tick%(60/a.frameRate) == 0 {
 		a.index++
 		if a.index > len(a.frames)-1 {
 			a.index = 0
@@ -101,7 +107,6 @@ func (a *Animation) Next() *pixel.Sprite {
 				a.done = true
 			}
 		}
-
 		frame = a.frames[a.index]
 	} else {
 		//always return same frame if paused or not an appropriate time to change animations

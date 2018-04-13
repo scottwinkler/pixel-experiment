@@ -5,8 +5,8 @@ import (
 
 	"github.com/faiface/pixel"
 	"github.com/rs/xid"
-	"github.com/scottwinkler/pixel-experiment/animation"
-	"github.com/scottwinkler/pixel-experiment/world"
+	"github.com/scottwinkler/simple-rpg/animation"
+	"github.com/scottwinkler/simple-rpg/world"
 )
 
 type Entity struct {
@@ -25,7 +25,7 @@ type Entity struct {
 func NewEntity(v pixel.Vec, r float64, animations []*animation.Animation, w *world.World) *Entity {
 	animationManager := animation.NewAnimationManager(animations)
 	animationManager.Select("Idle") //every entity should have an idle frame
-	sprite := animationManager.Selected.Next()
+	sprite := animationManager.Selected.Next(0)
 	matrix := pixel.Matrix(pixel.IM.Moved(v))
 	id := xid.New().String()
 	entity := &Entity{
@@ -65,6 +65,7 @@ func (e *Entity) Direction() int {
 
 func (e *Entity) Kill() {
 	fmt.Println("killing...")
+	e.world.SFXManager().MakeEffect("BloodExplosion", e.v)
 	e.world.DeleteGameObject(e)
 }
 
@@ -144,9 +145,7 @@ func (e *Entity) Update(tick int) {
 	if e.animationManager.Selected.Skippable() || e.animationManager.Selected.Done() { //only listen to new events if the current animation is skippable or done playing
 		e.animationManager.Select("Idle")
 	}
-	if tick == 0 {
-		e.sprite = e.animationManager.Selected.Next()
-	}
+	e.sprite = e.animationManager.Selected.Next(tick)
 	e.Draw()
 }
 func (e *Entity) Draw() {

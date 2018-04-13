@@ -1,1 +1,1 @@
-go install && ~/go/bin/pixel-experiment
+go install && ~/go/bin/simple-rpg

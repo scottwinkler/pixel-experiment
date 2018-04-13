@@ -5,9 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/scottwinkler/simple-rpg/sfx"
+
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
-	"github.com/scottwinkler/pixel-experiment/tilemap"
+	"github.com/scottwinkler/simple-rpg/tilemap"
 	"golang.org/x/image/colornames"
 )
 
@@ -37,14 +39,19 @@ type GameObject interface {
 }
 
 type World struct {
-	Groups  map[string][]GameObject
-	Tilemap *tilemap.Tilemap
-	Window  *pixelgl.Window
+	Groups     map[string][]GameObject
+	Tilemap    *tilemap.Tilemap
+	Window     *pixelgl.Window
+	sfxManager *sfx.SFXManager
 }
 
-func NewWorld(bounds pixel.Rect, tilemap *tilemap.Tilemap) *World {
+func (w *World) SFXManager() *sfx.SFXManager {
+	return w.sfxManager
+}
+
+func NewWorld(bounds pixel.Rect, tilemap *tilemap.Tilemap, effects []*sfx.SFX) *World {
 	cfg := pixelgl.WindowConfig{
-		Title:  "Pixel Rocks!",
+		Title:  "Simple RPG!",
 		Bounds: bounds,
 		VSync:  true,
 	}
@@ -52,10 +59,13 @@ func NewWorld(bounds pixel.Rect, tilemap *tilemap.Tilemap) *World {
 	if err != nil {
 		panic(err)
 	}
+	sfxManager := sfx.NewSFXManager(effects, win)
+
 	world := World{
-		Groups:  make(map[string][]GameObject),
-		Tilemap: tilemap,
-		Window:  win,
+		Groups:     make(map[string][]GameObject),
+		Tilemap:    tilemap,
+		Window:     win,
+		sfxManager: sfxManager,
 	}
 	return &world
 }
@@ -107,28 +117,26 @@ func RelativeDirection(posA pixel.Vec, posB pixel.Vec) int {
 }
 
 func (w *World) Start(fps float64, animationSpeed float64) {
-	tick := 0
+	tick := 1
 	interval := time.Duration(float64(1000) / float64(fps))
 	ticker := time.NewTicker(time.Millisecond * interval)
 	win := w.Window
 	tm := w.Tilemap
-	maxTick := 1
-	if fps >= animationSpeed {
-		maxTick = int(fps) / int(animationSpeed)
-	}
 	go func() {
 		for {
 			select {
 			case <-ticker.C: //main game loop @normalized fps is here
 				win.Clear(colornames.Black)
 				tm.DrawLayers(win, []string{"Ground", "Rocks"}) //draw base layers
-				w.UpdateGameObjects(tick)
+				//the calculations for animations are easier if they can assume a normalized 60 ticks per second
+				normalizedTick := int((60 / int(fps)) * tick)
+				w.UpdateGameObjects(normalizedTick)
+				w.sfxManager.Update(normalizedTick)
 				tm.DrawLayers(win, []string{"Treetops", "Collision"}) //draw top layers
 				win.Update()
 				tick++
-				//toggle for changing animation frame
-				if tick > maxTick {
-					tick = 0
+				if tick > int(fps) {
+					tick = 1
 				}
 			}
 		}

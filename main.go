@@ -5,13 +5,14 @@ import (
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
-	"github.com/scottwinkler/pixel-experiment/animation"
-	"github.com/scottwinkler/pixel-experiment/entity"
-	"github.com/scottwinkler/pixel-experiment/player"
-	"github.com/scottwinkler/pixel-experiment/sound"
-	"github.com/scottwinkler/pixel-experiment/tilemap"
-	"github.com/scottwinkler/pixel-experiment/utility"
-	"github.com/scottwinkler/pixel-experiment/world"
+	"github.com/scottwinkler/simple-rpg/animation"
+	"github.com/scottwinkler/simple-rpg/entity"
+	"github.com/scottwinkler/simple-rpg/player"
+	"github.com/scottwinkler/simple-rpg/sfx"
+	"github.com/scottwinkler/simple-rpg/sound"
+	"github.com/scottwinkler/simple-rpg/tilemap"
+	"github.com/scottwinkler/simple-rpg/utility"
+	"github.com/scottwinkler/simple-rpg/world"
 )
 
 func run() {
@@ -19,14 +20,17 @@ func run() {
 	player_sounds := sound.MappingToSounds(player_sound_mapping)
 
 	tm, _ := tilemap.ParseTiledJSON("_assets/tmx/world1.json")
-	animation_mapping := utility.LoadJSON("./_configuration/player/animations.json")
-
+	particles_animations_mapping := utility.LoadJSON("./_configuration/entity/effects.json")
+	effects_spritesheet := utility.LoadSpritesheet("_assets/particles/blood_bath.png", pixel.R(0, 0, 256, 256), 0.5)
+	effects := sfx.MappingToSFX(effects_spritesheet, particles_animations_mapping)
+	player_animations_mapping := utility.LoadJSON("./_configuration/player/animations.json")
+	slime_animations_mapping := utility.LoadJSON("./_configuration/entity/animations.json")
 	player_spritesheet := utility.LoadSpritesheet("_assets/spritesheets/chara_hero.png", pixel.R(0, 0, 48, 48), 2.0)
-	player_animations := animation.MappingToAnimations(player_spritesheet, animation_mapping)
+	player_animations := animation.MappingToAnimations(player_spritesheet, player_animations_mapping)
 	slime_spritesheet := utility.LoadSpritesheet("_assets/spritesheets/chara_slime.png", pixel.R(0, 0, 48, 48), 2.0)
-	slime_animations := animation.MappingToAnimations(slime_spritesheet, animation_mapping)
+	slime_animations := animation.MappingToAnimations(slime_spritesheet, slime_animations_mapping)
 
-	world := world.NewWorld(pixel.R(0, 0, 400, 400), tm)
+	world := world.NewWorld(pixel.R(0, 0, 400, 400), tm, effects)
 	slime := entity.NewEntity(pixel.V(150, 300), 16, slime_animations, world)
 	player := player.NewPlayer(pixel.V(150, 200), 16, player_animations, player_sounds, world)
 

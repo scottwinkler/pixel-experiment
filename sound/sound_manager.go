@@ -27,7 +27,6 @@ func (sm *SoundManager) asyncPlay(names ...string) {
 		}
 	}
 	speaker.Play(streamers...)
-	//fmt.Println("finished playing")
 }
 
 func (sm *SoundManager) Play(names ...string) {

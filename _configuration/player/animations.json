@@ -3,84 +3,98 @@
         "Frames": [0,1,2],
         "Skippable": true,
         "Loop": true,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     },
     "Wake": {
         "Frames": [4,5,6],
         "Skippable": false,
         "Loop": false,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     },
     "MoveDown": {
         "Frames": [8,9,10,11],
         "Skippable":true,
         "Loop": true,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     },
     "MoveRight": {
         "Frames": [12,13,14,15],
         "Skippable":true,
         "Loop": true,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     },
     "MoveLeft": {
         "Frames": [-12,-13,-14,-15],
         "Skippable":true,
         "Loop": true,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     },
     "MoveUp": {
         "Frames": [16,17,18,19],
         "Skippable":true,
         "Loop": true,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     },
     "AttackDown": {
         "Frames": [20,21,22,23],
         "Skippable":false,
         "Loop": false,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 20
     },
     "AttackRight": {
         "Frames": [24,25,26,27],
         "Skippable":false,
         "Loop": false,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 20
     },
     "AttackLeft": {
         "Frames": [-24,-25,-26,-27],
         "Skippable":false,
         "Loop": false,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 20
     },
     "AttackUp": {
         "Frames": [28,29,30,31],
         "Skippable":false,
         "Loop": false,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 20
     },
     "HitDown": {
         "Frames": [32,33,34],
         "Skippable":false,
         "Loop": false,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     },
     "HitRight": {
         "Frames": [36,37,38],
         "Skippable":false,
         "Loop": false,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     },
     "HitLeft": {
         "Frames": [-36,-37,-38],
         "Skippable":false,
         "Loop": false,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     },
     "HitUp": {
         "Frames": [40,41,42],
         "Skippable":false,
         "Loop": false,
-        "Smooth": true
+        "Smooth": true,
+        "FrameRate": 10
     }
 }
