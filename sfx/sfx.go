@@ -13,13 +13,13 @@ type SFX struct {
 	id          string
 	spritesheet *utility.Spritesheet
 	v           pixel.Vec
+	done        bool
 	name        string
-	frames      []int
 	sfxManager  *SFXManager
 	index       int
 	smooth      bool
 	frameRate   int
-	matrix      pixel.Matrix
+	frames      []SFXFrame
 }
 
 func (s *SFX) Id() string {
@@ -30,26 +30,47 @@ func (s *SFX) SetV(v pixel.Vec) {
 	s.v = v
 }
 
-func (s *SFX) Matrix() pixel.Matrix {
-	return s.matrix
-}
 func MappingToSFX(spritesheet *utility.Spritesheet, mapping map[string]interface{}) []*SFX {
 	var effects []*SFX
 	for name, value := range mapping {
 		attributes := value.(map[string]interface{})
 		framesArr := attributes["Frames"].([]interface{})
-		var frames []int
-		for _, frame := range framesArr {
-			frames = append(frames, int(frame.(float64)))
+		var sfxFrames []SFXFrame
+		for _, value := range framesArr {
+			matrix := spritesheet.Matrix()
+			frame := value.(float64)
+			//does the sprite need to be reflected?
+			if frame < 0 {
+				frame = math.Abs(frame)
+				matrix = matrix.Chained(pixel.IM.Rotated(pixel.ZV, -math.Pi).ScaledXY(pixel.ZV, pixel.V(-1, 1)).Rotated(pixel.ZV, math.Pi))
+			}
+			//assume that we do not use a custom matrix or color for effects created from spritesheets (maybe a bad guess?)
+			sfxFrames = append(sfxFrames, NewSFXFrame(int(frame), matrix, pixel.Alpha(1)))
 		}
 		smooth := attributes["Smooth"].(bool)
 		frameRate := int(attributes["FrameRate"].(float64)) //cast to int because ain't dealing with floating point nonsense
-		effects = append(effects, NewSFX(spritesheet, name, frames, smooth, frameRate))
+		effects = append(effects, NewSFX(spritesheet, name, sfxFrames, smooth, frameRate))
 	}
 	return effects
 }
 
-func NewSFX(spritesheet *utility.Spritesheet, name string, frames []int, smooth bool, frameRate int) *SFX {
+//a helper struct for creating effects which have colored masks or which use an adjusted matrix
+type SFXFrame struct {
+	Frame  int
+	Matrix pixel.Matrix
+	Mask   pixel.RGBA
+}
+
+//constructor utility of SFXFrame objects
+func NewSFXFrame(frame int, matrix pixel.Matrix, mask pixel.RGBA) SFXFrame {
+	return SFXFrame{
+		Frame:  frame,
+		Matrix: matrix,
+		Mask:   mask,
+	}
+}
+
+func NewSFX(spritesheet *utility.Spritesheet, name string, frames []SFXFrame, smooth bool, frameRate int) *SFX {
 	if smooth {
 		//smooth sfx by padding it with frames appended in reverse order
 		for i := len(frames) - 1; i > 0; i-- {
@@ -59,12 +80,12 @@ func NewSFX(spritesheet *utility.Spritesheet, name string, frames []int, smooth 
 	id := xid.New().String()
 	sfx := SFX{
 		spritesheet: spritesheet,
-		frames:      frames,
 		frameRate:   frameRate,
 		name:        name,
 		smooth:      smooth,
 		id:          id,
-		matrix:      spritesheet.Matrix(),
+		frames:      frames,
+		done:        false,
 	}
 	return &sfx
 }
@@ -76,30 +97,15 @@ func (s *SFX) Clone() *SFX {
 	return effect
 }
 
-func (s *SFX) Next(tick int) *pixel.Sprite {
-	var frame int
+func (s *SFX) Next(tick int) (*pixel.Sprite, SFXFrame) {
 	if tick%(60/s.frameRate) == 0 {
 		s.index++
 		if s.index >= len(s.frames)-1 {
 			//kill self
 			s.sfxManager.killEffect(s.id)
+			s.done = true
 		}
-		frame = s.frames[s.index]
-	} else {
-		//always return same frame if paused or not an appropriate time to change animations
-		frame = s.frames[s.index]
 	}
-
-	//does the sprite need to be reflected?
-	if frame < 0 {
-		frame = int(math.Abs(float64(frame)))
-		s.matrix = s.spritesheet.Matrix().Chained(pixel.IM.Rotated(pixel.ZV, -math.Pi).ScaledXY(pixel.ZV, pixel.V(-1, 1)).Rotated(pixel.ZV, math.Pi)).Chained(pixel.IM.Moved(s.v))
-	} else {
-		s.matrix = s.spritesheet.Matrix().Chained(pixel.IM.Moved(s.v))
-	}
-	return s.spritesheet.Sprites()[frame]
-}
-
-func (s *SFX) Draw(t *pixel.Target) {
-
+	frame := s.frames[s.index].Frame
+	return s.spritesheet.Sprites()[frame], s.frames[s.index]
 }

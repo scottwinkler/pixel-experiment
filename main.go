@@ -16,6 +16,8 @@ import (
 )
 
 func run() {
+	//todo : each entity should not have their own sound manager... theres no reason to load once for each entity.
+	//instead make a global sound manager held by the world class
 	player_sound_mapping := utility.LoadJSON("./_configuration/player/sounds.json")
 	player_sounds := sound.MappingToSounds(player_sound_mapping)
 
@@ -29,13 +31,19 @@ func run() {
 	player_animations := animation.MappingToAnimations(player_spritesheet, player_animations_mapping)
 	slime_spritesheet := utility.LoadSpritesheet("_assets/spritesheets/chara_slime.png", pixel.R(0, 0, 48, 48), 2.0)
 	slime_animations := animation.MappingToAnimations(slime_spritesheet, slime_animations_mapping)
+	slime_sound_mapping := utility.LoadJSON("./_configuration/entity/sounds.json")
+	slime_sounds := sound.MappingToSounds(slime_sound_mapping)
 
 	world := world.NewWorld(pixel.R(0, 0, 400, 400), tm, effects)
-	slime := entity.NewEntity(pixel.V(150, 300), 16, slime_animations, world)
+	slime := entity.NewEntity(pixel.V(150, 300), 16, slime_animations, slime_sounds, world)
+	slime2 := entity.NewEntity(pixel.V(200, 300), 16, slime_animations, slime_sounds, world)
+	slime3 := entity.NewEntity(pixel.V(100, 300), 16, slime_animations, slime_sounds, world)
 	player := player.NewPlayer(pixel.V(150, 200), 16, player_animations, player_sounds, world)
 
 	world.AddGameObject("player", player)
 	world.AddGameObject("monster", slime)
+	world.AddGameObject("monster", slime2)
+	world.AddGameObject("monster", slime3)
 	world.Start(60.0, 15.0)
 
 }

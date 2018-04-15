@@ -7,11 +7,27 @@ import (
 	"github.com/scottwinkler/simple-rpg/utility"
 )
 
+//a helper struct for creating animations which have color masks unique for each frame
+type AnimationFrame struct {
+	Frame  int
+	Matrix pixel.Matrix
+	Mask   pixel.RGBA
+}
+
+//constructor utility of AnimationFrame objects
+func NewAnimationFrame(frame int, matrix pixel.Matrix, mask pixel.RGBA) AnimationFrame {
+	return AnimationFrame{
+		Frame:  frame,
+		Matrix: matrix,
+		Mask:   mask,
+	}
+}
+
+//properties for animation
 type Animation struct {
 	name             string
 	spritesheet      *utility.Spritesheet
-	matrix           pixel.Matrix
-	frames           []int
+	frames           []AnimationFrame
 	animationManager *AnimationManager
 	index            int
 	loop             bool
@@ -21,39 +37,8 @@ type Animation struct {
 	done             bool
 }
 
-//getter function for matrix
-func (a *Animation) Matrix() pixel.Matrix {
-	return a.matrix
-}
-
-//getter function for spritesheet
-func (a *Animation) Spritesheet() *utility.Spritesheet {
-	return a.spritesheet
-}
-
-//utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
-
-//idea: instead of passing the spritesheet explicitly, if the mapping contains a reference to the path of the spritesheet,
-//then we can do this automatically
-func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]interface{}) []*Animation {
-	var animations []*Animation
-	for name, value := range mapping {
-		attributes := value.(map[string]interface{})
-		framesArr := attributes["Frames"].([]interface{})
-		var frames []int
-		for _, frame := range framesArr {
-			frames = append(frames, int(frame.(float64)))
-		}
-		loop := attributes["Loop"].(bool)
-		skippable := attributes["Skippable"].(bool)
-		smooth := attributes["Smooth"].(bool)
-		frameRate := int(attributes["FrameRate"].(float64)) //cast to int because ain't dealing with floating point nonsense
-		animations = append(animations, NewAnimation(spritesheet, name, frames, loop, skippable, smooth, frameRate))
-	}
-	return animations
-}
-
-func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int, loop bool, skippable bool, smooth bool, frameRate int) *Animation {
+//constructor for animation
+func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []AnimationFrame, loop bool, skippable bool, smooth bool, frameRate int) *Animation {
 	if smooth {
 		//smooth animation by padding it with frames appended in reverse order
 		for i := len(frames) - 1; i > 0; i-- {
@@ -65,10 +50,9 @@ func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int, l
 		name:        name,
 		spritesheet: spritesheet,
 		frames:      frames,
-		index:       0, //when Next() is first called it will go to index=0 which is what we want
+		index:       0,
 		loop:        loop,
 		paused:      true,
-		matrix:      spritesheet.Matrix(),
 		skippable:   skippable,
 		frameRate:   frameRate,
 		done:        false,
@@ -76,29 +60,76 @@ func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []int, l
 	return &animation
 }
 
+//getter method for index
+func (a *Animation) Index() int {
+	return a.index
+}
+
+//getter method for frameRate
+func (a *Animation) FrameRate() int {
+	return a.frameRate
+}
+
+//getter method for spritesheet
+func (a *Animation) Spritesheet() *utility.Spritesheet {
+	return a.spritesheet
+}
+
+//setter method for animationManager
 func (a *Animation) SetAnimationManager(animationManager *AnimationManager) {
 	a.animationManager = animationManager
 }
 
+//setter method for paused
+func (a *Animation) SetPaused(paused bool) {
+	a.paused = paused
+}
+
+//utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
+
+//idea: instead of passing the spritesheet explicitly, if the mapping contains a reference to the path of the spritesheet,
+//then we can do this automatically
+func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]interface{}) []*Animation {
+	var animations []*Animation
+	for name, value := range mapping {
+		attributes := value.(map[string]interface{})
+		framesArr := attributes["Frames"].([]interface{})
+		var animationFrames []AnimationFrame
+		for _, value := range framesArr {
+			matrix := spritesheet.Matrix()
+			frame := value.(float64)
+			//does the sprite need to be reflected?
+			if frame < 0 {
+				frame = math.Abs(frame)
+				matrix = matrix.Chained(pixel.IM.Rotated(pixel.ZV, -math.Pi).ScaledXY(pixel.ZV, pixel.V(-1, 1)).Rotated(pixel.ZV, math.Pi))
+			}
+			//assume that we do not use a custom matrix or color for effects created from spritesheets (maybe a bad guess?)
+			animationFrames = append(animationFrames, NewAnimationFrame(int(frame), matrix, pixel.Alpha(1)))
+		}
+
+		loop := attributes["Loop"].(bool)
+		skippable := attributes["Skippable"].(bool)
+		smooth := attributes["Smooth"].(bool)
+		frameRate := int(attributes["FrameRate"].(float64)) //cast to int because ain't dealing with floating point nonsense
+		animations = append(animations, NewAnimation(spritesheet, name, animationFrames, loop, skippable, smooth, frameRate))
+	}
+	return animations
+}
+
+//resets animation to initial state
 func (a *Animation) Reset() {
 	a.done = false
 	a.index = 0
 }
 
-func (a *Animation) SetPaused(paused bool) {
-	a.paused = paused
+//returns current frame data. ready only, does not have side effects
+func (a *Animation) Current() (*pixel.Sprite, AnimationFrame) {
+	frame := a.frames[a.index].Frame
+	return a.spritesheet.Sprites()[frame], a.frames[a.index]
 }
 
-func (a *Animation) Skippable() bool {
-	return a.skippable
-}
-
-func (a *Animation) Done() bool {
-	return a.done
-}
-
-func (a *Animation) Next(tick int) *pixel.Sprite {
-	var frame int
+//returns the next sprite and frame data. should be invoked on every update.
+func (a *Animation) Next(tick int) (*pixel.Sprite, AnimationFrame) {
 	if !a.paused && tick%(60/a.frameRate) == 0 {
 		a.index++
 		if a.index > len(a.frames)-1 {
@@ -107,18 +138,7 @@ func (a *Animation) Next(tick int) *pixel.Sprite {
 				a.done = true
 			}
 		}
-		frame = a.frames[a.index]
-	} else {
-		//always return same frame if paused or not an appropriate time to change animations
-		frame = a.frames[a.index]
 	}
-
-	//does the sprite need to be reflected?
-	if frame < 0 {
-		frame = int(math.Abs(float64(frame)))
-		a.matrix = a.spritesheet.Matrix().Chained(pixel.IM.Rotated(pixel.ZV, -math.Pi).ScaledXY(pixel.ZV, pixel.V(-1, 1)).Rotated(pixel.ZV, math.Pi))
-	} else {
-		a.matrix = a.spritesheet.Matrix()
-	}
-	return a.spritesheet.Sprites()[frame]
+	frame := a.frames[a.index].Frame
+	return a.spritesheet.Sprites()[frame], a.frames[a.index]
 }

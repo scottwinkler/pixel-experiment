@@ -4,7 +4,7 @@
         "Skippable": true,
         "Loop": true,
         "Smooth": true,
-        "FrameRate": 20
+        "FrameRate": 10
     },
     "Wake": {
         "Frames": [4,5,6],

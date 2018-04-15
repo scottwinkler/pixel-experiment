@@ -2,6 +2,11 @@ package entity
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/scottwinkler/simple-rpg/sound"
+
+	"github.com/scottwinkler/simple-rpg/sfx"
 
 	"github.com/faiface/pixel"
 	"github.com/rs/xid"
@@ -17,58 +22,102 @@ type Entity struct {
 	r                float64 //used for collider calculations
 	matrix           pixel.Matrix
 	animationManager *animation.AnimationManager
+	soundManager     *sound.SoundManager
 	world            *world.World
 	direction        int
 	health           float64
 }
 
-func NewEntity(v pixel.Vec, r float64, animations []*animation.Animation, w *world.World) *Entity {
+func NewEntity(v pixel.Vec, r float64, animations []*animation.Animation, sounds []*sound.Sound, w *world.World) *Entity {
 	animationManager := animation.NewAnimationManager(animations)
 	animationManager.Select("Idle") //every entity should have an idle frame
-	sprite := animationManager.Selected.Next(0)
-	matrix := pixel.Matrix(pixel.IM.Moved(v))
+	soundManager := sound.NewSoundManager(sounds)
 	id := xid.New().String()
 	entity := &Entity{
 		id:               id,
-		sprite:           sprite,
 		speed:            3, //default
 		v:                v,
 		r:                r,
-		matrix:           matrix,
 		animationManager: animationManager,
+		soundManager:     soundManager,
 		world:            w,
-		direction:        world.DOWN,
-		health:           15.0,
+		direction:        world.DOWN, //default
+		health:           15.0,       //default -- todo: should be changed by parameter
 	}
 	return entity
 }
 
+//getter method for id
 func (e *Entity) Id() string {
 	return e.id
 }
 
+//getter method for v
 func (e *Entity) V() pixel.Vec {
 	return e.v
 }
 
+//getter method for r
 func (e *Entity) R() float64 {
 	return e.r
 }
 
+//getter method for speed
 func (e *Entity) Speed() float64 {
 	return e.speed
 }
 
+//getter method for direction
 func (e *Entity) Direction() int {
 	return e.direction
 }
 
+//a calculated effect to play once when the entity dies
+func (e *Entity) PlayDeathEffect() {
+	var sfxFrames []sfx.SFXFrame
+	animation := e.animationManager.Selected()
+	_, animationFrame := animation.Current()
+	//matrix := animationFrame.Matrix
+	mask := animationFrame.Mask
+	frame := animationFrame.Frame
+	//8 frames feels right. this is approximately how long the death sound takes at a frameRate of 10
+	framesCount := 8
+	for i := framesCount; i >= 0; i-- {
+		scaleFactor := float64(i) / float64(framesCount)
+		fmt.Printf("scalefactor: %f", scaleFactor)
+		//this exponential function makes it more interesting than a simple linear interpolation
+		//y := math.Exp(1 - 1/math.Pow(scaleFactor, 2))
+		//scaleMatrix := pixel.IM.
+		matrix := animationFrame.Matrix //.ScaledXY(e.v, pixel.V(1, scaleFactor))
+		matrix = matrix.ScaledXY(pixel.ZV, pixel.V(1, scaleFactor))
+		//add a green color mask to the sprite, and make it incrementally smaller
+		mask = mask.Mul(pixel.RGB(0.2, 1, 0.5))
+		//todo: come up with a method that converts hex colors to rgb masks because this is really hard to get right
+		sfxFrame := sfx.NewSFXFrame(frame, matrix, mask)
+		sfxFrames = append(sfxFrames, sfxFrame)
+	}
+	frameRate := animation.FrameRate()
+	sfx := sfx.NewSFX(animation.Spritesheet(), "EntityDeath", sfxFrames, false, frameRate)
+	//the slime looks better if its translated slightly down... not critical though
+	//and should be tested with other sprites
+	//pos := pixel.V(e.v.X, e.v.Y-8)
+	e.world.SFXManager().PlayCustomEffect(sfx, e.v)
+}
+
 func (e *Entity) Kill() {
 	fmt.Println("killing...")
-	e.world.SFXManager().MakeEffect("BloodExplosion", e.v)
+	//play a cool death scene.
+	e.PlayDeathEffect()
+
+	//figure out a way to clean this up so i dont need to put this everywhere. maybe make a function in
+	//sound manager called PlayWithDelay()?
+	e.soundManager.DelayedPlay(150*time.Millisecond, "entdeath1_1")
+
+	//unregister this entity from the world
 	e.world.DeleteGameObject(e)
 }
 
+//todo: should be a parameter
 func (e *Entity) Material() string {
 	return world.MATERIAL_FLESH
 }
@@ -95,7 +144,7 @@ func (e *Entity) Move(direction int) {
 }
 
 func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
-	//am i near enoguh to be affected?
+	//am i near enough to be affected?
 	//draw a slightly bigger circle than the collision circle
 	//so that the hit box is reasonable
 	hitFactor := 1.2
@@ -127,12 +176,16 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 			case world.UP:
 				e.animationManager.Select("HitUp")
 			}
-			e.health -= 3
-			fmt.Println(e.health)
-			if e.health <= 0 {
-				e.Kill()
-			}
-			cb(e)
+			go func() {
+				time.Sleep(150 * time.Millisecond)
+				e.soundManager.Play("enthit1_1")
+				e.health -= 3
+				if e.health <= 0 {
+					e.Kill()
+				}
+				cb(e)
+			}()
+
 			return true
 		}
 	}
@@ -141,16 +194,16 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 }
 
 func (e *Entity) Update(tick int) {
-	//win := e.World.Window
-	if e.animationManager.Selected.Skippable() || e.animationManager.Selected.Done() { //only listen to new events if the current animation is skippable or done playing
+	if e.animationManager.Ready() {
 		e.animationManager.Select("Idle")
 	}
-	e.sprite = e.animationManager.Selected.Next(tick)
-	e.Draw()
+	e.Draw(tick)
 }
-func (e *Entity) Draw() {
-	animation := e.animationManager.Selected
-	//chained methods so that we first scale by spritesheet size, then by reflection, then by position
-	matrix := animation.Matrix().Chained(e.matrix)
-	e.sprite.Draw(e.world.Window, matrix)
+
+func (e *Entity) Draw(tick int) {
+	target := e.world.Window
+	sprite, animationFrame := e.animationManager.Next(tick)
+	matrix := animationFrame.Matrix.Moved(e.v)
+	mask := animationFrame.Mask
+	sprite.DrawColorMask(target, matrix, mask)
 }

@@ -34,6 +34,7 @@ func MappingToSounds(mapping map[string]interface{}) []*Sound {
 	return sounds
 }
 
+//private method for reading sound from files
 func decode(path string) (beep.StreamSeekCloser, beep.Format) {
 	file := utility.LoadFile(path)
 	var streamer beep.StreamSeekCloser
@@ -50,12 +51,12 @@ func decode(path string) (beep.StreamSeekCloser, beep.Format) {
 		streamer, format, err = mp3.Decode(file)
 	}
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		fmt.Printf("[ERROR]: Could not decode sound file: %v", err)
 	}
 	return streamer, format
 }
 
-//create a new sound from a file
+//sound constructor
 func NewSound(name string, buffer *beep.Buffer) *Sound {
 	sound := Sound{
 		name:   name,

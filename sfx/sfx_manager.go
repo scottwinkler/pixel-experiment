@@ -1,6 +1,7 @@
 package sfx
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/faiface/pixel"
@@ -51,20 +52,31 @@ func (sm *SFXManager) killEffect(id string) {
 	}
 }
 
-//plays an effect at the given point
-func (sm *SFXManager) MakeEffect(name string, v pixel.Vec) {
+//plays an effect from the library at the given point
+func (sm *SFXManager) PlayEffect(name string, v pixel.Vec) {
 	referenceEffect := sm.getEffectByName(name)
 	newEffect := referenceEffect.Clone()
 	newEffect.SetV(v)
-	//fmt.Printf("appending effect %s", newEffect.name)
 	sm.Running = append(sm.Running, newEffect)
+}
+
+//plays an effect that isn't cached in the library. useful for playing computed effects that only ever get run once
+func (sm *SFXManager) PlayCustomEffect(sfx *SFX, v pixel.Vec) {
+	sfx.sfxManager = sm
+	sfx.SetV(v)
+	sm.Running = append(sm.Running, sfx)
 }
 
 //loop through all effects and update each one
 func (sm *SFXManager) Update(tick int) {
 	for _, effect := range sm.Running {
-		//fmt.Println("calling next on effect")
-		sprite := effect.Next(tick)
-		sprite.Draw(sm.window, effect.Matrix())
+		sprite, sfxFrame := effect.Next(tick)
+		if !effect.done {
+			target := sm.window
+			matrix := sfxFrame.Matrix.Moved(effect.v)
+			mask := sfxFrame.Mask
+			fmt.Printf(" sfxFrame.Frame: %v", sfxFrame.Frame)
+			sprite.DrawColorMask(target, matrix, mask)
+		}
 	}
 }

@@ -2,13 +2,16 @@ package animation
 
 import (
 	"strings"
+
+	"github.com/faiface/pixel"
 )
 
 type AnimationManager struct {
 	Animations []*Animation
-	Selected   *Animation
+	selected   *Animation //the currently playing animation
 }
 
+//constructor for animation manager
 func NewAnimationManager(animations []*Animation) *AnimationManager {
 	var animationManager *AnimationManager
 	animationManager = &AnimationManager{
@@ -21,20 +24,37 @@ func NewAnimationManager(animations []*Animation) *AnimationManager {
 	}
 	return animationManager
 }
-func (am *AnimationManager) AddAnimation(animation *Animation) {
-	animation.animationManager = am
-	am.Animations = append(am.Animations, animation)
+
+//wrapper around internal state.
+func (am *AnimationManager) Next(tick int) (*pixel.Sprite, AnimationFrame) {
+	return am.selected.Next(tick)
+}
+
+//wrapper around internal state.
+func (am *AnimationManager) Current() (*pixel.Sprite, AnimationFrame) {
+	return am.selected.Current()
+}
+
+//getter for selected. Ask yourself if you really need this before using it. Check yourself before you wreck yourself
+func (am *AnimationManager) Selected() *Animation {
+	return am.selected
+}
+
+//a helper method to know if the current animation is ready to accept new input
+//i.e current animation is done or can be skipped
+func (am *AnimationManager) Ready() bool {
+	return am.selected.skippable || am.selected.done
 }
 
 func (am *AnimationManager) Select(name string) {
 	//only reset if its not a looping animation.
-	if am.Selected != nil && !am.Selected.loop {
-		am.Selected.Reset()
+	if am.selected != nil && !am.selected.loop {
+		am.selected.Reset()
 	}
 	for _, animation := range am.Animations {
 		if strings.EqualFold(animation.name, name) {
-			am.Selected = animation
-			am.Selected.SetPaused(false)
+			am.selected = animation
+			am.selected.SetPaused(false)
 		}
 	}
 }
