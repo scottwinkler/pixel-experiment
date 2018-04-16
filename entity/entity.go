@@ -1,49 +1,76 @@
 package entity
 
 import (
-	"fmt"
+	"image/color"
+	"math"
 	"time"
 
-	"github.com/scottwinkler/simple-rpg/sound"
+	"github.com/scottwinkler/simple-rpg/utility"
 
-	"github.com/scottwinkler/simple-rpg/sfx"
+	"github.com/scottwinkler/simple-rpg/sound"
 
 	"github.com/faiface/pixel"
 	"github.com/rs/xid"
 	"github.com/scottwinkler/simple-rpg/animation"
+	"github.com/scottwinkler/simple-rpg/sfx"
 	"github.com/scottwinkler/simple-rpg/world"
 )
 
+//Subset of entity configuration that excludes ephemeral data
+type EntityData struct {
+	Animations []*animation.Animation
+	Sounds     []*sound.Sound
+	Health     float64
+	Speed      float64
+	R          float64
+	Material   string
+	Name       string
+	Color      color.Color
+}
+
+//needed so we don't have an insane amount of arguments to the constructor
+type EntityConfiguration struct {
+	V    pixel.Vec
+	W    *world.World
+	Data *EntityData
+	//color color.Color possibly a tint color?  if not specified then no tint?
+}
+
 type Entity struct {
 	id               string
-	sprite           *pixel.Sprite
 	speed            float64
 	v                pixel.Vec
 	r                float64 //used for collider calculations
-	matrix           pixel.Matrix
 	animationManager *animation.AnimationManager
 	soundManager     *sound.SoundManager
 	world            *world.World
 	direction        int
 	health           float64
+	name             string //the kind of entity e.g. slime, skeleton, goblin, whatever
+	material         string
+	color            color.Color
 }
 
-func NewEntity(v pixel.Vec, r float64, animations []*animation.Animation, sounds []*sound.Sound, w *world.World) *Entity {
-	animationManager := animation.NewAnimationManager(animations)
+func NewEntity(config *EntityConfiguration) *Entity {
+	animationManager := animation.NewAnimationManager(config.Data.Animations)
 	animationManager.Select("Idle") //every entity should have an idle frame
-	soundManager := sound.NewSoundManager(sounds)
+	soundManager := sound.NewSoundManager(config.Data.Sounds)
 	id := xid.New().String()
 	entity := &Entity{
 		id:               id,
-		speed:            3, //default
-		v:                v,
-		r:                r,
+		speed:            config.Data.Speed,
+		v:                config.V,
+		r:                config.Data.R,
 		animationManager: animationManager,
 		soundManager:     soundManager,
-		world:            w,
+		world:            config.W,
 		direction:        world.DOWN, //default
-		health:           15.0,       //default -- todo: should be changed by parameter
+		health:           config.Data.Health,
+		name:             config.Data.Name,
+		material:         config.Data.Material,
+		color:            config.Data.Color,
 	}
+	config.W.AddGameObject(config.Data.Name, entity) //register self with world
 	return entity
 }
 
@@ -72,54 +99,46 @@ func (e *Entity) Direction() int {
 	return e.direction
 }
 
+//getter method for material
+func (e *Entity) Material() string {
+	return e.material
+}
+
+//convenience function
+func (e *Entity) IsDead() bool {
+	return e.health <= 0
+}
+
 //a calculated effect to play once when the entity dies
-func (e *Entity) PlayDeathEffect() {
+func (e *Entity) MakeDeathEffect() *sfx.SFX {
 	var sfxFrames []sfx.SFXFrame
 	animation := e.animationManager.Selected()
 	_, animationFrame := animation.Current()
-	//matrix := animationFrame.Matrix
-	mask := animationFrame.Mask
 	frame := animationFrame.Frame
 	//8 frames feels right. this is approximately how long the death sound takes at a frameRate of 10
 	framesCount := 8
 	for i := framesCount; i >= 0; i-- {
 		scaleFactor := float64(i) / float64(framesCount)
-		fmt.Printf("scalefactor: %f", scaleFactor)
 		//this exponential function makes it more interesting than a simple linear interpolation
-		//y := math.Exp(1 - 1/math.Pow(scaleFactor, 2))
-		//scaleMatrix := pixel.IM.
-		matrix := animationFrame.Matrix //.ScaledXY(e.v, pixel.V(1, scaleFactor))
-		matrix = matrix.ScaledXY(pixel.ZV, pixel.V(1, scaleFactor))
-		//add a green color mask to the sprite, and make it incrementally smaller
-		mask = mask.Mul(pixel.RGB(0.2, 1, 0.5))
-		//todo: come up with a method that converts hex colors to rgb masks because this is really hard to get right
+		scaleFactor = math.Exp(1 - 1/math.Pow(scaleFactor, 2))
+		matrix := animationFrame.Matrix.ScaledXY(pixel.ZV, pixel.V(1, scaleFactor))
+		//add a color mask to the sprite, and make it incrementally smaller
+		mask := utility.ToRGBA(e.color, 0.8)
 		sfxFrame := sfx.NewSFXFrame(frame, matrix, mask)
 		sfxFrames = append(sfxFrames, sfxFrame)
 	}
 	frameRate := animation.FrameRate()
 	sfx := sfx.NewSFX(animation.Spritesheet(), "EntityDeath", sfxFrames, false, frameRate)
-	//the slime looks better if its translated slightly down... not critical though
-	//and should be tested with other sprites
-	//pos := pixel.V(e.v.X, e.v.Y-8)
-	e.world.SFXManager().PlayCustomEffect(sfx, e.v)
+	return sfx
+
 }
 
 func (e *Entity) Kill() {
-	fmt.Println("killing...")
 	//play a cool death scene.
-	e.PlayDeathEffect()
-
-	//figure out a way to clean this up so i dont need to put this everywhere. maybe make a function in
-	//sound manager called PlayWithDelay()?
-	e.soundManager.DelayedPlay(150*time.Millisecond, "entdeath1_1")
-
-	//unregister this entity from the world
+	e.soundManager.Play("death0")
+	effect := e.MakeDeathEffect()
+	e.world.SFXManager().PlayCustomEffect(effect, e.v)
 	e.world.DeleteGameObject(e)
-}
-
-//todo: should be a parameter
-func (e *Entity) Material() string {
-	return world.MATERIAL_FLESH
 }
 
 func (e *Entity) Move(direction int) {
@@ -138,9 +157,6 @@ func (e *Entity) Move(direction int) {
 	if !e.world.Collides(e.Id(), nextPos, e.r) {
 		e.v = nextPos
 	}
-	//update matrix and collision circle
-	matrix := pixel.IM.Moved(e.v)
-	e.matrix = matrix
 }
 
 func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
@@ -178,14 +194,15 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 			}
 			go func() {
 				time.Sleep(150 * time.Millisecond)
-				e.soundManager.Play("enthit1_1")
+
 				e.health -= 3
 				if e.health <= 0 {
 					e.Kill()
+				} else {
+					e.soundManager.Play("hit0")
 				}
 				cb(e)
 			}()
-
 			return true
 		}
 	}

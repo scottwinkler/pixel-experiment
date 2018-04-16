@@ -1,0 +1,9 @@
+{
+    "Idle": {
+        "Frames": [0,1,2,3,4],
+        "Skippable": false,
+        "Loop": true,
+        "Smooth": false,
+        "FrameRate": 10
+    }
+}

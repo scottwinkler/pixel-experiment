@@ -35,7 +35,7 @@ func (sm *SoundManager) Play(names ...string) {
 }
 
 //a helper method for playing sounds some time in the future
-func (sm *SoundManager) DelayedPlay(d time.Duration, names ...string) {
+func (sm *SoundManager) PlayWithDelay(d time.Duration, names ...string) {
 	go func() {
 		time.Sleep(d)
 		sm.Play(names...)

@@ -154,14 +154,14 @@ func (p *Player) Attack(direction int) {
 		if obj != nil {
 			gameObject := obj.(world.GameObject)
 			material := gameObject.Material()
-
+			//fmt.Printf("[DEBUG] -- material: %s", material)
 			switch material {
 			case world.MATERIAL_FLESH:
 				p.soundManager.Play("humanattacking" + num)
 			case world.MATERIAL_METAL:
 				p.soundManager.Play("humanattacking"+num, "swordhitmetal")
 			case world.MATERIAL_WOOD:
-				p.soundManager.Play("swordhitwood")
+				p.soundManager.Play("humanattacking"+num, "swordhitwood")
 			}
 		} else {
 			p.soundManager.Play("humanattacking"+num, "swordswing")

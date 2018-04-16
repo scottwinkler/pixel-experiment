@@ -1,7 +1,6 @@
 package sfx
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/faiface/pixel"
@@ -75,7 +74,7 @@ func (sm *SFXManager) Update(tick int) {
 			target := sm.window
 			matrix := sfxFrame.Matrix.Moved(effect.v)
 			mask := sfxFrame.Mask
-			fmt.Printf(" sfxFrame.Frame: %v", sfxFrame.Frame)
+			//fmt.Printf(" sfxFrame.Frame: %v", sfxFrame.Frame)
 			sprite.DrawColorMask(target, matrix, mask)
 		}
 	}
