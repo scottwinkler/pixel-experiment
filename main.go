@@ -18,9 +18,6 @@ import (
 )
 
 func run() {
-	//todo : each entity should not have their own sound manager... theres no reason to load once for each entity.
-	//instead make a global sound manager held by the world class
-
 	tm, _ := tilemap.ParseTiledJSON("_assets/tmx/world1.json")
 	//particles
 	particles_animations_mapping := utility.LoadJSON("./_configuration/entity/slime/effects.json")
@@ -42,12 +39,12 @@ func run() {
 	slime_sounds := sound.MappingToSounds(slime_sound_mapping)
 
 	//slime spawner
+	//todo: make sounds configuration include volumes
 	spawner_spritesheet := utility.LoadSpritesheet("_assets/spritesheets/portalRings2.png", pixel.R(0, 0, 32, 32), 2.0)
 	spawner_animations_mapping := utility.LoadJSON("./_configuration/entity/spawner/animations.json")
 	spawner_animations := animation.MappingToAnimations(spawner_spritesheet, spawner_animations_mapping)
 	spawner_sound_mapping := utility.LoadJSON("./_configuration/entity/spawner/sounds.json")
 	spawner_sounds := sound.MappingToSounds(spawner_sound_mapping)
-	//var spawner_sounds []*sound.Sound
 
 	w := world.NewWorld(pixel.R(0, 0, 400, 400), tm, effects)
 
@@ -61,27 +58,23 @@ func run() {
 			Sounds:     spawner_sounds,
 			Health:     12,
 			Speed:      0,
-			Name:       "spawner",
+			Name:       entity.ENTITY_SPAWNER,
 			Material:   world.MATERIAL_WOOD,
-			Color:      colornames.Black,
+			Color:      colornames.White,
 		},
 	}
 	spawnData := &entity.EntityData{
 		Animations: slime_animations,
 		Sounds:     slime_sounds,
 		Health:     9,
-		Speed:      3,
+		Speed:      1,
 		R:          16,
 		Material:   world.MATERIAL_FLESH,
-		Name:       "slime",
+		Name:       entity.ENTITY_SLIME,
 		Color:      colornames.Green,
 	}
 	entity.NewSpawner(spawnerConfig, spawnData)
-	//spawner.Spawn()
 	w.AddGameObject("player", player)
-	//	world.AddGameObject("monster", slime)
-	//	world.AddGameObject("monster", slime2)
-	//	world.AddGameObject("monster", slime3)
 	w.Start(60.0, 15.0)
 
 }

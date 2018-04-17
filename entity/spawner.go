@@ -18,7 +18,7 @@ func NewSpawner(config *EntityConfiguration, spawnData *EntityData) *Spawner {
 	spawner := &Spawner{
 		entity:        entity,
 		spawnData:     spawnData,
-		spawnLocation: pixel.R(entity.v.X-20, entity.v.Y-50, entity.v.X+20, entity.v.Y-20), //where the creatures are spawned
+		spawnLocation: pixel.R(entity.v.X-30, entity.v.Y-80, entity.v.X+30, entity.v.Y-50), //where the creatures are spawned
 	}
 
 	//create monsters for as long as the spawner is alive
@@ -45,7 +45,7 @@ func (s *Spawner) getSpawnPosition() (pixel.Vec, bool) {
 	//not going to try to do optimal packing because who the fuck cares
 	var spawnPos pixel.Vec
 	for x := minX; x <= maxX; x += spawnDiameter {
-		for y := minY; y <= maxY; y += spawnDiameter {
+		for y := maxY; y >= minY; y -= spawnDiameter {
 			spawnPos = pixel.V(float64(x), float64(y))
 			//ensure there won't be a collision by placing an entity at the given point
 			if !s.entity.world.Collides("DEADBEEF", spawnPos, s.spawnData.R) {

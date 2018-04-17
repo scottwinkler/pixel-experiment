@@ -3,7 +3,6 @@ package entity
 import (
 	"image/color"
 	"math"
-	"time"
 
 	"github.com/scottwinkler/simple-rpg/utility"
 
@@ -14,6 +13,12 @@ import (
 	"github.com/scottwinkler/simple-rpg/animation"
 	"github.com/scottwinkler/simple-rpg/sfx"
 	"github.com/scottwinkler/simple-rpg/world"
+)
+
+//list of all valid entity names
+const (
+	ENTITY_SLIME   = "slime"
+	ENTITY_SPAWNER = "spawner"
 )
 
 //Subset of entity configuration that excludes ephemeral data
@@ -49,6 +54,7 @@ type Entity struct {
 	name             string //the kind of entity e.g. slime, skeleton, goblin, whatever
 	material         string
 	color            color.Color
+	ai               ai
 }
 
 func NewEntity(config *EntityConfiguration) *Entity {
@@ -56,6 +62,7 @@ func NewEntity(config *EntityConfiguration) *Entity {
 	animationManager.Select("Idle") //every entity should have an idle frame
 	soundManager := sound.NewSoundManager(config.Data.Sounds)
 	id := xid.New().String()
+	name := config.Data.Name
 	entity := &Entity{
 		id:               id,
 		speed:            config.Data.Speed,
@@ -66,11 +73,12 @@ func NewEntity(config *EntityConfiguration) *Entity {
 		world:            config.W,
 		direction:        world.DOWN, //default
 		health:           config.Data.Health,
-		name:             config.Data.Name,
+		name:             name,
 		material:         config.Data.Material,
 		color:            config.Data.Color,
 	}
-	config.W.AddGameObject(config.Data.Name, entity) //register self with world
+	entity.ai = AiMap[name](entity)      //fetch ai to use based on entity name
+	config.W.AddGameObject(name, entity) //register self with world
 	return entity
 }
 
@@ -104,6 +112,21 @@ func (e *Entity) Material() string {
 	return e.material
 }
 
+//getter method for world
+func (e *Entity) World() *world.World {
+	return e.world
+}
+
+//getter method for animationManager
+func (e *Entity) AnimationManager() *animation.AnimationManager {
+	return e.animationManager
+}
+
+//getter method for soundManager
+func (e *Entity) SoundManager() *sound.SoundManager {
+	return e.soundManager
+}
+
 //convenience function
 func (e *Entity) IsDead() bool {
 	return e.health <= 0
@@ -123,7 +146,7 @@ func (e *Entity) MakeDeathEffect() *sfx.SFX {
 		scaleFactor = math.Exp(1 - 1/math.Pow(scaleFactor, 2))
 		matrix := animationFrame.Matrix.ScaledXY(pixel.ZV, pixel.V(1, scaleFactor))
 		//add a color mask to the sprite, and make it incrementally smaller
-		mask := utility.ToRGBA(e.color, 0.8)
+		mask := utility.ToRGBA(e.color, 0.6)
 		sfxFrame := sfx.NewSFXFrame(frame, matrix, mask)
 		sfxFrames = append(sfxFrames, sfxFrame)
 	}
@@ -141,7 +164,8 @@ func (e *Entity) Kill() {
 	e.world.DeleteGameObject(e)
 }
 
-func (e *Entity) Move(direction int) {
+//Move to given direction. Returns a boolean for success condition
+func (e *Entity) Move(direction int) bool {
 	nextPos := pixel.V(e.v.X, e.v.Y)
 	switch direction {
 	case world.LEFT:
@@ -156,7 +180,9 @@ func (e *Entity) Move(direction int) {
 	e.direction = direction
 	if !e.world.Collides(e.Id(), nextPos, e.r) {
 		e.v = nextPos
+		return false
 	}
+	return true
 }
 
 func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
@@ -192,17 +218,13 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 			case world.UP:
 				e.animationManager.Select("HitUp")
 			}
-			go func() {
-				time.Sleep(150 * time.Millisecond)
-
-				e.health -= 3
-				if e.health <= 0 {
-					e.Kill()
-				} else {
-					e.soundManager.Play("hit0")
-				}
-				cb(e)
-			}()
+			e.health -= 3
+			if e.health <= 0 {
+				e.Kill()
+			} else {
+				e.soundManager.Play("hit0")
+			}
+			cb(e)
 			return true
 		}
 	}
@@ -210,11 +232,46 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 	return false
 }
 
-func (e *Entity) Update(tick int) {
-	if e.animationManager.Ready() {
-		e.animationManager.Select("Idle")
+//shitty copy paste
+func (e *Entity) Attack(direction int) {
+	e.direction = direction
+	switch direction {
+	case world.LEFT:
+		e.animationManager.Select("AttackLeft")
+	case world.RIGHT:
+		e.animationManager.Select("AttackRight")
+	case world.DOWN:
+		e.animationManager.Select("AttackDown")
+	case world.UP:
+		e.animationManager.Select("AttackUp")
 	}
-	e.Draw(tick)
+
+	//create callback for playing the appropriate sound effect
+	cb := func(obj interface{}) {
+		//num := strconv.Itoa(rand.Intn(2) + 1) //for playing a random attack sound
+		if obj != nil {
+			/*gameObject := obj.(world.GameObject)
+				material := gameObject.Material()
+				//fmt.Printf("[DEBUG] -- material: %s", material)
+				switch material {
+				case world.MATERIAL_FLESH:
+					p.soundManager.Play("humanattacking" + num)
+				case world.MATERIAL_METAL:
+					p.soundManager.Play("humanattacking"+num, "swordhitmetal")
+				case world.MATERIAL_WOOD:
+					p.soundManager.Play("humanattacking"+num, "swordhitwood")
+				}
+			} else {
+				p.soundManager.Play("humanattacking"+num, "swordswing")
+			}*/
+		}
+	}
+	e.world.HitEvent(e, cb)
+
+}
+
+func (e *Entity) Update(tick int) {
+	e.ai.Update(tick) //outsource all our work like the plebs we are
 }
 
 func (e *Entity) Draw(tick int) {

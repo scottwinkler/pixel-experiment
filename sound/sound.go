@@ -24,7 +24,7 @@ func MappingToSounds(mapping map[string]interface{}) []*Sound {
 		for _, obj := range arr {
 			attributes := obj.(map[string]interface{})
 			name := attributes["Name"].(string)
-			path := attributes["Path"].(string)
+			path := attributes["Source"].(string)
 			streamer, format := decode(path)
 			buffer := beep.NewBuffer(format)
 			buffer.Append(streamer)

@@ -1,9 +1,52 @@
 {
     "Idle": {
         "Frames": [0,1,2,3,4],
-        "Skippable": false,
+        "Skippable": true,
         "Loop": true,
         "Smooth": false,
         "FrameRate": 10
+    },
+    "HitDown": {
+        "Frames": [0,1,2],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": false,
+        "FrameRate": 10,
+        "Mask" : {
+            "Color" : "white",
+            "Alpha": 0.6
+        }
+    },
+    "HitUp": {
+        "Frames": [0,1,2],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": false,
+        "FrameRate": 10,
+        "Mask" : {
+            "Color" : "white",
+            "Alpha": 0.6
+        }
+    },
+    "HitLeft": {
+        "Frames": [0,1,2],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": false,
+        "FrameRate": 10,
+        "Mask" : {
+            "Color" : "white",
+            "Alpha": 0.6
+        }
+    },"HitRight": {
+        "Frames": [0,1,2],
+        "Skippable":false,
+        "Loop": false,
+        "Smooth": false,
+        "FrameRate": 10,
+        "Mask" : {
+            "Color" : "white",
+            "Alpha": 0.6
+        }
     }
 }

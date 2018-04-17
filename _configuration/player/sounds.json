@@ -2,33 +2,39 @@
     "Sword": [
         {
             "Name": "swordhitmetal",
-            "Path": "_assets/sounds/rpg_pack/weapon&equipment/swordhitmetal_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/weapon&equipment/swordhitmetal_sound.flac"
         },
         {
             "Name": "swordhitflesh",
-            "Path": "_assets/sounds/rpg_pack/weapon&equipment/swordhitflesh_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/weapon&equipment/swordhitflesh_sound.flac"
         },
         {
             "Name": "swordhitwood",
-            "Path": "_assets/sounds/rpg_pack/weapon&equipment/swordhitwood_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/weapon&equipment/swordhitwood_sound.flac"
         },
         {
             "Name": "swordswing",
-            "Path": "_assets/sounds/rpg_pack/weapon&equipment/swordswing_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/weapon&equipment/swordswing_sound.flac"
         }
     ],
     "Attack": [
         {
             "Name": "humanattacking1",
-            "Path": "_assets/sounds/rpg_pack/creature_SFX/humanattacking1_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/creature_SFX/humanattacking1_sound.flac"
         },
         {
             "Name": "humanattacking2",
-            "Path": "_assets/sounds/rpg_pack/creature_SFX/humanattacking2_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/creature_SFX/humanattacking2_sound.flac"
         },
         {
             "Name": "humanattacking3",
-            "Path": "_assets/sounds/rpg_pack/creature_SFX/humanattacking3_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/creature_SFX/humanattacking3_sound.flac"
+        }
+    ],
+    "Hit":[
+        {
+            "Name": "hit0",
+            "Source":"_assets/sounds/rpg_pack/creature_SFX/humanhit1_sound.flac"
         }
     ]
 }

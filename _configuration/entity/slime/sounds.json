@@ -2,21 +2,21 @@
     "Hit": [
         {
             "Name": "hit0",
-            "Path": "_assets/sounds/rpg_pack/creature_SFX/enthit1_1_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/creature_SFX/enthit1_1_sound.flac"
         },
         {
             "Name": "hit1",
-            "Path": "_assets/sounds/rpg_pack/creature_SFX/enthit1_2_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/creature_SFX/enthit1_2_sound.flac"
         }
     ],
     "Death": [
         {
             "Name": "death0",
-            "Path": "_assets/sounds/rpg_pack/creature_SFX/entdeath1_1_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/creature_SFX/entdeath1_1_sound.flac"
         },
         {
             "Name": "death1",
-            "Path": "_assets/sounds/rpg_pack/creature_SFX/entdeath1_2_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/creature_SFX/entdeath1_2_sound.flac"
         }
     ]
 }

@@ -4,6 +4,13 @@
         "Skippable": true,
         "Loop": true,
         "Smooth": true,
+        "FrameRate": 5
+    },
+    "Rest": {
+        "Frames": [0,1,2],
+        "Skippable": false,
+        "Loop": false,
+        "Smooth": true,
         "FrameRate": 10
     },
     "Wake": {
@@ -11,42 +18,42 @@
         "Skippable": false,
         "Loop": false,
         "Smooth": true,
-        "FrameRate": 10
+        "FrameRate": 7
     },
     "MoveDown": {
         "Frames": [8,9,10,11],
         "Skippable":true,
         "Loop": true,
         "Smooth": true,
-        "FrameRate": 10
+        "FrameRate": 7
     },
     "MoveRight": {
         "Frames": [12,13,14,15],
         "Skippable":true,
         "Loop": true,
         "Smooth": true,
-        "FrameRate": 10
+        "FrameRate": 7
     },
     "MoveLeft": {
         "Frames": [-12,-13,-14,-15],
         "Skippable":true,
         "Loop": true,
         "Smooth": true,
-        "FrameRate": 10
+        "FrameRate": 7
     },
     "MoveUp": {
         "Frames": [16,17,18,19],
         "Skippable":true,
         "Loop": true,
         "Smooth": true,
-        "FrameRate": 10
+        "FrameRate": 7
     },
     "AttackDown": {
         "Frames": [20,21,22,23],
         "Skippable":false,
         "Loop": false,
         "Smooth": true,
-        "FrameRate": 10
+        "FrameRate":10
     },
     "AttackRight": {
         "Frames": [24,25,26,27],
@@ -88,7 +95,7 @@
         "Skippable":false,
         "Loop": false,
         "Smooth": true,
-        "FrameRate": 10
+        "FrameRate":10
     },
     "HitUp": {
         "Frames": [40,41,42],

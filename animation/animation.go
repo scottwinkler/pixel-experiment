@@ -5,6 +5,7 @@ import (
 
 	"github.com/faiface/pixel"
 	"github.com/scottwinkler/simple-rpg/utility"
+	"golang.org/x/image/colornames"
 )
 
 //a helper struct for creating animations which have color masks unique for each frame
@@ -60,6 +61,11 @@ func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []Animat
 	return &animation
 }
 
+//getter method for name
+func (a *Animation) Name() string {
+	return a.name
+}
+
 //getter method for index
 func (a *Animation) Index() int {
 	return a.index
@@ -93,6 +99,16 @@ func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]in
 	var animations []*Animation
 	for name, value := range mapping {
 		attributes := value.(map[string]interface{})
+		mask := pixel.Alpha(1) //default
+
+		//if a mask was supplied, then use that
+		if value, ok := attributes["Mask"]; ok {
+			maskData := value.(map[string]interface{})
+			colorName := maskData["Color"].(string)
+			color := colornames.Map[colorName]
+			alpha := maskData["Alpha"].(float64)
+			mask = utility.ToRGBA(color, alpha)
+		}
 		framesArr := attributes["Frames"].([]interface{})
 		var animationFrames []AnimationFrame
 		for _, value := range framesArr {
@@ -104,12 +120,13 @@ func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]in
 				matrix = matrix.Chained(pixel.IM.Rotated(pixel.ZV, -math.Pi).ScaledXY(pixel.ZV, pixel.V(-1, 1)).Rotated(pixel.ZV, math.Pi))
 			}
 			//assume that we do not use a custom matrix or color for effects created from spritesheets (maybe a bad guess?)
-			animationFrames = append(animationFrames, NewAnimationFrame(int(frame), matrix, pixel.Alpha(1)))
+			animationFrames = append(animationFrames, NewAnimationFrame(int(frame), matrix, mask))
 		}
 
 		loop := attributes["Loop"].(bool)
 		skippable := attributes["Skippable"].(bool)
 		smooth := attributes["Smooth"].(bool)
+
 		frameRate := int(attributes["FrameRate"].(float64)) //cast to int because ain't dealing with floating point nonsense
 		animations = append(animations, NewAnimation(spritesheet, name, animationFrames, loop, skippable, smooth, frameRate))
 	}

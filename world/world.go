@@ -91,9 +91,8 @@ func (w *World) HitEvent(source interface{}, callback Fn_Callback) {
 			}
 		}
 	}
-	//fmt.Printf("hitcount: %d", hitCount)
+	//no hits, attack has missed
 	if hitCount == 0 {
-		//fmt.Println("a miss")
 		callback(nil)
 	}
 }
@@ -157,10 +156,27 @@ func (w *World) Resize() {
 	w.Window.Update()
 }
 
+//gets a registered gameobject by id
+func (w *World) GameObjectById(id string) GameObject {
+	var gameobject GameObject
+	for _, group := range w.Groups {
+		for _, obj := range group {
+			//fmt.Printf("obj.Id(): %s, id: %s", obj.Id(), id)
+			if strings.EqualFold(obj.Id(), id) {
+				gameobject = obj
+				return gameobject
+			}
+		}
+	}
+	return gameobject
+}
+
+//the method that gameobjects call when they want to register themselves with the world
 func (w *World) AddGameObject(group string, gameobject GameObject) {
 	w.Groups[group] = append(w.Groups[group], gameobject)
 }
 
+//the method that gameobjects call when they want to deregister themselves with the world
 func (w *World) DeleteGameObject(gameobject GameObject) {
 	var new_name string
 	var new_group []GameObject

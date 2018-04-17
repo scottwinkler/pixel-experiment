@@ -6,30 +6,29 @@ import (
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
-	"github.com/rs/xid"
 	"github.com/scottwinkler/simple-rpg/animation"
 	"github.com/scottwinkler/simple-rpg/sound"
 	"github.com/scottwinkler/simple-rpg/world"
 )
 
 type Player struct {
-	id string
-	//sprite           *pixel.Sprite
-	speed float64
-	v     pixel.Vec
-	r     float64 //used for collider calculations
-	//	matrix           pixel.Matrix
+	id               string
+	speed            float64
+	v                pixel.Vec
+	r                float64 //used for collider calculations
 	animationManager *animation.AnimationManager
 	soundManager     *sound.SoundManager
 	world            *world.World
 	direction        int
+	health           int
 }
 
 func NewPlayer(v pixel.Vec, r float64, animations []*animation.Animation, sounds []*sound.Sound, w *world.World) *Player {
 	animationManager := animation.NewAnimationManager(animations)
 	soundManager := sound.NewSoundManager(sounds)
 	animationManager.Select("Idle")
-	id := xid.New().String()
+	//id := xid.New().String()
+	id := "player" //hack until there is a better way to get gameobjects
 	player := &Player{
 		id:               id,
 		speed:            3, //default
@@ -90,11 +89,11 @@ func (p *Player) Move(direction int) {
 }
 
 func (p *Player) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
-	//am i near enoguh to be affected?
+	//am i near enough to be affected?
 	//draw a slightly bigger circle than the collision circle
 	//so that the hit box is reasonable
-
-	if world.CircleCollision(p.v, p.r, s.V(), s.R()+s.Speed()) {
+	hitFactor := 1.2
+	if world.CircleCollision(p.v, p.r*hitFactor, s.V(), s.R()+s.Speed()) {
 		//where am i relative to the source?
 		relativePos := p.v.Sub(s.V())
 		top := relativePos.Y >= relativePos.X    //above line y=x?
@@ -115,23 +114,24 @@ func (p *Player) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 			switch p.direction {
 			case world.LEFT:
 				p.animationManager.Select("HitLeft")
-				cb(p)
-				return true
 			case world.RIGHT:
 				p.animationManager.Select("HitRight")
-				cb(p)
-				return true
 			case world.DOWN:
 				p.animationManager.Select("HitDown")
-				cb(p)
-				return true
 			case world.UP:
 				p.animationManager.Select("HitUp")
-				cb(p)
-				return true
 			}
+			/*	p.health -= 3
+				if p.health <= 0 {
+					p.Kill()
+				} else {*/
+			p.soundManager.Play("hit0")
+			//}
+			cb(p)
+			return true
 		}
 	}
+
 	return false
 }
 

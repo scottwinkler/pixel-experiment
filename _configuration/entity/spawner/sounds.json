@@ -2,19 +2,19 @@
     "Hit": [
         {
             "Name": "hit0",
-            "Path": "_assets/sounds/rpg_pack/physical_abilities/shieldbash_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/physical_abilities/shieldbash_sound.flac"
         }
     ],
     "Death": [
         {
             "Name": "death0",
-            "Path": "_assets/sounds/rpg_pack/physical_abilities/slam_sound.flac"
+            "Source": "_assets/sounds/rpg_pack/physical_abilities/slam_sound.flac"
         }
     ],
     "Special" :[
         {
             "Name":"spawn0",
-            "Path":"_assets/sounds/rpg_pack/energy_abilities/teleportshort_sound.flac"
+            "Source":"_assets/sounds/rpg_pack/energy_abilities/teleportshort_sound.flac"
         }
     ]
 }
