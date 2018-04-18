@@ -19,6 +19,7 @@ import (
 const (
 	ENTITY_SLIME   = "slime"
 	ENTITY_SPAWNER = "spawner"
+	ENTITY_PLAYER  = "player"
 )
 
 //Subset of entity configuration that excludes ephemeral data
@@ -54,12 +55,13 @@ type Entity struct {
 	name             string //the kind of entity e.g. slime, skeleton, goblin, whatever
 	material         string
 	color            color.Color
-	ai               ai
+	controller       controller
+	damage           float64
 }
 
 func NewEntity(config *EntityConfiguration) *Entity {
 	animationManager := animation.NewAnimationManager(config.Data.Animations)
-	animationManager.Select("Idle") //every entity should have an idle frame
+	animationManager.Select("Idle") //every entity should have an idle animation
 	soundManager := sound.NewSoundManager(config.Data.Sounds)
 	id := xid.New().String()
 	name := config.Data.Name
@@ -76,9 +78,10 @@ func NewEntity(config *EntityConfiguration) *Entity {
 		name:             name,
 		material:         config.Data.Material,
 		color:            config.Data.Color,
+		damage:           3.0, //fix this
 	}
-	entity.ai = AiMap[name](entity)      //fetch ai to use based on entity name
-	config.W.AddGameObject(name, entity) //register self with world
+	entity.controller = ControllerMap[name](entity) //fetch ai to use based on entity name
+	config.W.AddGameObject(name, entity)            //register self with world
 	return entity
 }
 
@@ -127,6 +130,16 @@ func (e *Entity) SoundManager() *sound.SoundManager {
 	return e.soundManager
 }
 
+//getter method for damage
+func (e *Entity) Damage() float64 {
+	return e.damage
+}
+
+//getter method for name
+func (e *Entity) Name() string {
+	return e.name
+}
+
 //convenience function
 func (e *Entity) IsDead() bool {
 	return e.health <= 0
@@ -158,7 +171,7 @@ func (e *Entity) MakeDeathEffect() *sfx.SFX {
 
 func (e *Entity) Kill() {
 	//play a cool death scene.
-	e.soundManager.Play("death0")
+	//e.soundManager.Play("death0") -> should be moved into callback function
 	effect := e.MakeDeathEffect()
 	e.world.SFXManager().PlayCustomEffect(effect, e.v)
 	e.world.DeleteGameObject(e)
@@ -208,27 +221,29 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 		}
 		//is the source facing the right direction?
 		if relativeDir == s.Direction() {
-			switch e.direction {
-			case world.LEFT:
-				e.animationManager.Select("HitLeft")
-			case world.RIGHT:
-				e.animationManager.Select("HitRight")
-			case world.DOWN:
-				e.animationManager.Select("HitDown")
-			case world.UP:
-				e.animationManager.Select("HitUp")
+			//let the controller decide if it wants to accept the hit or not
+			isHit := e.controller.HitCallback(s)
+			am := e.animationManager
+			if isHit {
+				switch e.direction {
+				case world.LEFT:
+					am.Select("HitLeft")
+				case world.RIGHT:
+					am.Select("HitRight")
+				case world.DOWN:
+					am.Select("HitDown")
+				case world.UP:
+					am.Select("HitUp")
+				}
+				e.health -= s.Damage()
+				if e.health <= 0 {
+					e.Kill()
+				}
 			}
-			e.health -= 3
-			if e.health <= 0 {
-				e.Kill()
-			} else {
-				e.soundManager.Play("hit0")
-			}
-			cb(e)
-			return true
 		}
+		cb(e)
+		return true
 	}
-
 	return false
 }
 
@@ -245,33 +260,12 @@ func (e *Entity) Attack(direction int) {
 	case world.UP:
 		e.animationManager.Select("AttackUp")
 	}
-
-	//create callback for playing the appropriate sound effect
-	cb := func(obj interface{}) {
-		//num := strconv.Itoa(rand.Intn(2) + 1) //for playing a random attack sound
-		if obj != nil {
-			/*gameObject := obj.(world.GameObject)
-				material := gameObject.Material()
-				//fmt.Printf("[DEBUG] -- material: %s", material)
-				switch material {
-				case world.MATERIAL_FLESH:
-					p.soundManager.Play("humanattacking" + num)
-				case world.MATERIAL_METAL:
-					p.soundManager.Play("humanattacking"+num, "swordhitmetal")
-				case world.MATERIAL_WOOD:
-					p.soundManager.Play("humanattacking"+num, "swordhitwood")
-				}
-			} else {
-				p.soundManager.Play("humanattacking"+num, "swordswing")
-			}*/
-		}
-	}
+	cb := e.controller.AttackCallback
 	e.world.HitEvent(e, cb)
-
 }
 
 func (e *Entity) Update(tick int) {
-	e.ai.Update(tick) //outsource all our work like the plebs we are
+	e.controller.Update(tick) //outsource all our work like the plebs we are
 }
 
 func (e *Entity) Draw(tick int) {

@@ -36,6 +36,8 @@ type GameObject interface {
 	V() pixel.Vec
 	R() float64
 	Material() string
+	Damage() float64
+	Name() string
 }
 
 type World struct {
@@ -154,6 +156,19 @@ func (w *World) Resize() {
 	bounds := pixel.R(0, 0, maxX, maxY)
 	w.Window.SetBounds(bounds)
 	w.Window.Update()
+}
+
+//gets all game objects of given name (type)
+func (w *World) GameObjectsByName(name string) []GameObject {
+	var gameObjects []GameObject
+	for _, group := range w.Groups {
+		for _, gameObject := range group {
+			if strings.EqualFold(gameObject.Name(), name) {
+				gameObjects = append(gameObjects, gameObject)
+			}
+		}
+	}
+	return gameObjects
 }
 
 //gets a registered gameobject by id

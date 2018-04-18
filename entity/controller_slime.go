@@ -6,27 +6,46 @@ import (
 	"github.com/scottwinkler/simple-rpg/world"
 )
 
-type SlimeAi struct {
+type SlimeController struct {
 	entity *Entity
 }
 
 //simple constructor
-func NewSlimeAi(entity *Entity) ai {
-	return &SlimeAi{
+func NewSlimeController(entity *Entity) controller {
+	return &SlimeController{
 		entity: entity,
 	}
 }
 
-//implementation of ai interface
-func (a *SlimeAi) Update(tick int) {
+func (c *SlimeController) HitCallback(source interface{}) bool {
 	var (
-		e  = a.entity
+		s  = source.(world.GameObject)
+		e  = c.entity
+		sm = e.soundManager
+	)
+	//is this a killing blow?
+	if e.health-s.Damage() <= 0 {
+		sm.Play("death0")
+	} else {
+		sm.Play("hit0")
+	}
+	return true
+}
+
+func (c *SlimeController) AttackCallback(interface{}) {
+	//do nothing
+}
+
+//implementation of controller interface
+func (c *SlimeController) Update(tick int) {
+	var (
+		e  = c.entity
 		am = e.AnimationManager()
 	)
 
 	if am.Ready() {
 		w := e.World()
-		p := w.GameObjectById("player")
+		p := w.GameObjectsByName("player")[0] //always get first player... wont work for multiplayer
 		distanceToPlayer := p.V().To(e.V()).Len()
 		noticeRange := 5 * e.R() //magic numbers, beware
 		aggroRange := 10 * e.R()

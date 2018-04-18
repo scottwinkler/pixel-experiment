@@ -9,7 +9,6 @@ import (
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/scottwinkler/simple-rpg/animation"
 	"github.com/scottwinkler/simple-rpg/entity"
-	"github.com/scottwinkler/simple-rpg/player"
 	"github.com/scottwinkler/simple-rpg/sfx"
 	"github.com/scottwinkler/simple-rpg/sound"
 	"github.com/scottwinkler/simple-rpg/tilemap"
@@ -48,7 +47,23 @@ func run() {
 
 	w := world.NewWorld(pixel.R(0, 0, 400, 400), tm, effects)
 
-	player := player.NewPlayer(pixel.V(150, 200), 16, player_animations, player_sounds, w)
+	//player := player.NewPlayer(pixel.V(150, 200), 16, player_animations, player_sounds, w)
+	playerConfig := &entity.EntityConfiguration{
+		V: pixel.V(150, 200),
+		W: w,
+		Data: &entity.EntityData{
+			R:          16,
+			Animations: player_animations,
+			Sounds:     player_sounds,
+			Health:     12,
+			Speed:      3,
+			Name:       entity.ENTITY_PLAYER,
+			Material:   world.MATERIAL_FLESH,
+			Color:      colornames.Red,
+		},
+	}
+	entity.NewEntity(playerConfig)
+
 	spawnerConfig := &entity.EntityConfiguration{
 		V: pixel.V(150, 300),
 		W: w,
@@ -74,7 +89,7 @@ func run() {
 		Color:      colornames.Green,
 	}
 	entity.NewSpawner(spawnerConfig, spawnData)
-	w.AddGameObject("player", player)
+	//	w.AddGameObject("player", player)
 	w.Start(60.0, 15.0)
 
 }
