@@ -180,21 +180,27 @@ func (e *Entity) Kill() {
 //Move to given direction. Returns a boolean for success condition
 func (e *Entity) Move(direction int) bool {
 	nextPos := pixel.V(e.v.X, e.v.Y)
+	var moveAnimation string
 	switch direction {
 	case world.LEFT:
 		nextPos.X -= e.speed
+		moveAnimation = "MoveLeft"
 	case world.RIGHT:
 		nextPos.X += e.speed
+		moveAnimation = "MoveRight"
 	case world.DOWN:
 		nextPos.Y -= e.speed
+		moveAnimation = "MoveDown"
 	case world.UP:
 		nextPos.Y += e.speed
+		moveAnimation = "MoveUp"
 	}
 	e.direction = direction
 	if !e.world.Collides(e.Id(), nextPos, e.r) {
 		e.v = nextPos
 		return false
 	}
+	e.animationManager.Select(moveAnimation)
 	return true
 }
 
@@ -266,6 +272,7 @@ func (e *Entity) Attack(direction int) {
 
 func (e *Entity) Update(tick int) {
 	e.controller.Update(tick) //outsource all our work like the plebs we are
+	e.Draw(tick)
 }
 
 func (e *Entity) Draw(tick int) {

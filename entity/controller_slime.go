@@ -45,7 +45,13 @@ func (c *SlimeController) Update(tick int) {
 
 	if am.Ready() {
 		w := e.World()
-		p := w.GameObjectsByName("player")[0] //always get first player... wont work for multiplayer
+		players := w.GameObjectsByName("player") //always get first player... wont work for multiplayer
+		//condition on death of player
+		if len(players) == 0 {
+			am.Select("Idle")
+			return
+		}
+		p := players[0] //select first player
 		distanceToPlayer := p.V().To(e.V()).Len()
 		noticeRange := 5 * e.R() //magic numbers, beware
 		aggroRange := 10 * e.R()
@@ -71,7 +77,8 @@ func (c *SlimeController) Update(tick int) {
 					//add some randomness in the choice of direction to choose with a coin toss
 					heads := rand.Intn(2) == 0
 					//try moving in the obvious direction first
-					if !e.Move(dir) {
+					moveSuccess := e.Move(dir)
+					if !moveSuccess {
 						switch dir {
 						case world.DOWN, world.UP:
 							if heads {
@@ -94,5 +101,5 @@ func (c *SlimeController) Update(tick int) {
 			}
 		}
 	}
-	e.Draw(tick)
+	//e.Draw(tick)
 }

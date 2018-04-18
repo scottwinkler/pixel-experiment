@@ -43,5 +43,5 @@ func (c *NullController) Update(tick int) {
 	if am.Ready() {
 		am.Select("Idle")
 	}
-	e.Draw(tick)
+	//e.Draw(tick)
 }

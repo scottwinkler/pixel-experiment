@@ -90,5 +90,5 @@ func (c *PlayerController) Update(tick int) {
 			am.Select("Idle")
 		}
 	}
-	e.Draw(tick)
+	//e.Draw(tick)
 }
