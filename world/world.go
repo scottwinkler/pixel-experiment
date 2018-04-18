@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/scottwinkler/simple-rpg/sfx"
-
+"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/scottwinkler/simple-rpg/tilemap"
@@ -123,6 +123,11 @@ func (w *World) Start(fps float64, animationSpeed float64) {
 	ticker := time.NewTicker(time.Millisecond * interval)
 	win := w.Window
 	tm := w.Tilemap
+	imd := imdraw.New(nil)
+	imd.Color=pixel.RGB(1, 0, 0)
+	imd.Push(pixel.V(0,0))
+	imd.Push(pixel.V(50,50))
+	imd.Rectangle(0)
 	go func() {
 		for {
 			select {
@@ -134,6 +139,7 @@ func (w *World) Start(fps float64, animationSpeed float64) {
 				w.UpdateGameObjects(normalizedTick)
 				w.sfxManager.Update(normalizedTick)
 				tm.DrawLayers(win, []string{"Treetops", "Collision"}) //draw top layers
+				imd.Draw(win)
 				win.Update()
 				tick++
 				if tick > int(fps) {
