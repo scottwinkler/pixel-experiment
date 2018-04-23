@@ -13,7 +13,7 @@ import (
 
 func LoadFile(path string) *os.File {
 	//cwd, _ := os.Getwd()
-	//fmt.Printf("cwd %s", cwd)
+	//fmt.Printf("[DEBUG] cwd %s", cwd)
 	file, err := os.Open(path)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -34,9 +34,6 @@ func LoadJSON(path string) map[string]interface{} {
 }
 
 func LoadPicture(path string) (pixel.Picture, error) {
-	//fmt.Println("printing cwd")
-	//fmt.Println(os.Getwd())
-	//fmt.Println("picture path: " + path)
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

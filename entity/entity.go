@@ -4,6 +4,7 @@ import (
 	"image/color"
 	"math"
 
+	"github.com/scottwinkler/simple-rpg/enum"
 	"github.com/scottwinkler/simple-rpg/utility"
 
 	"github.com/scottwinkler/simple-rpg/sound"
@@ -15,15 +16,8 @@ import (
 	"github.com/scottwinkler/simple-rpg/world"
 )
 
-//list of all valid entity names
-const (
-	ENTITY_SLIME   = "slime"
-	ENTITY_SPAWNER = "spawner"
-	ENTITY_PLAYER  = "player"
-)
-
-//Subset of entity configuration that excludes ephemeral data
-type EntityData struct {
+//Data -- Subset of entity configuration that excludes ephemeral data
+type Data struct {
 	Animations []*animation.Animation
 	Sounds     []*sound.Sound
 	Health     float64
@@ -34,46 +28,50 @@ type EntityData struct {
 	Color      color.Color
 }
 
-//needed so we don't have an insane amount of arguments to the constructor
-type EntityConfiguration struct {
+//Configuration -- needed so we don't have an insane amount of arguments to the constructor
+type Configuration struct {
 	V    pixel.Vec
 	W    *world.World
-	Data *EntityData
+	Data *Data
 	//color color.Color possibly a tint color?  if not specified then no tint?
 }
 
+//Entity -- implements world.GameObject, the underlying struct for all living entities
 type Entity struct {
 	id               string
+	parent           interface{} //the container of entity, nil if there isn't one
 	speed            float64
 	v                pixel.Vec
 	r                float64 //used for collider calculations
-	animationManager *animation.AnimationManager
-	soundManager     *sound.SoundManager
+	animationManager *animation.Manager
+	soundManager     *sound.Manager
 	world            *world.World
 	direction        int
 	health           float64
 	name             string //the kind of entity e.g. slime, skeleton, goblin, whatever
 	material         string
 	color            color.Color
-	controller       controller
+	controller       Controller
 	damage           float64
 }
 
-func NewEntity(config *EntityConfiguration) *Entity {
-	animationManager := animation.NewAnimationManager(config.Data.Animations)
+//NewEntity -- constructor for Entity
+func NewEntity(config *Configuration, parent interface{}) *Entity {
+	animationManager := animation.NewManager(config.Data.Animations)
 	animationManager.Select("Idle") //every entity should have an idle animation
-	soundManager := sound.NewSoundManager(config.Data.Sounds)
+	soundManager := sound.NewManager(config.Data.Sounds)
 	id := xid.New().String()
 	name := config.Data.Name
 	entity := &Entity{
 		id:               id,
+		parent:           parent,
 		speed:            config.Data.Speed,
 		v:                config.V,
 		r:                config.Data.R,
 		animationManager: animationManager,
 		soundManager:     soundManager,
 		world:            config.W,
-		direction:        world.DOWN, //default
+		direction:        enum.Direction.Down, //default
 		health:           config.Data.Health,
 		name:             name,
 		material:         config.Data.Material,
@@ -85,69 +83,69 @@ func NewEntity(config *EntityConfiguration) *Entity {
 	return entity
 }
 
-//getter method for id
-func (e *Entity) Id() string {
+//ID -- getter method for id
+func (e *Entity) ID() string {
 	return e.id
 }
 
-//getter method for v
+//V -- getter method for v
 func (e *Entity) V() pixel.Vec {
 	return e.v
 }
 
-//getter method for r
+//R -- getter method for r
 func (e *Entity) R() float64 {
 	return e.r
 }
 
-//getter method for speed
+//Speed -- getter method for speed
 func (e *Entity) Speed() float64 {
 	return e.speed
 }
 
-//getter method for direction
+//Direction -- getter method for direction
 func (e *Entity) Direction() int {
 	return e.direction
 }
 
-//getter method for material
+//Material -- getter method for material
 func (e *Entity) Material() string {
 	return e.material
 }
 
-//getter method for world
+//World -- getter method for world
 func (e *Entity) World() *world.World {
 	return e.world
 }
 
-//getter method for animationManager
-func (e *Entity) AnimationManager() *animation.AnimationManager {
+//AnimationManager -- getter method for animationManager
+func (e *Entity) AnimationManager() *animation.Manager {
 	return e.animationManager
 }
 
-//getter method for soundManager
-func (e *Entity) SoundManager() *sound.SoundManager {
+//SoundManager -- getter method for soundManager
+func (e *Entity) SoundManager() *sound.Manager {
 	return e.soundManager
 }
 
-//getter method for damage
+//Damage -- getter method for damage
 func (e *Entity) Damage() float64 {
 	return e.damage
 }
 
-//getter method for name
+//Name -- getter method for name
 func (e *Entity) Name() string {
 	return e.name
 }
 
-//convenience function
+//IsDead -- convenience function to know if an entity is dead
 func (e *Entity) IsDead() bool {
 	return e.health <= 0
 }
 
 //a calculated effect to play once when the entity dies
-func (e *Entity) MakeDeathEffect() *sfx.SFX {
-	var sfxFrames []sfx.SFXFrame
+func (e *Entity) makeDeathEffect() *sfx.SFX {
+	var sfxFrames []sfx.Frame
 	animation := e.animationManager.Selected()
 	_, animationFrame := animation.Current()
 	frame := animationFrame.Frame
@@ -160,7 +158,7 @@ func (e *Entity) MakeDeathEffect() *sfx.SFX {
 		matrix := animationFrame.Matrix.ScaledXY(pixel.ZV, pixel.V(1, scaleFactor))
 		//add a color mask to the sprite, and make it incrementally smaller
 		mask := utility.ToRGBA(e.color, 0.6)
-		sfxFrame := sfx.NewSFXFrame(frame, matrix, mask)
+		sfxFrame := sfx.NewFrame(frame, matrix, mask)
 		sfxFrames = append(sfxFrames, sfxFrame)
 	}
 	frameRate := animation.FrameRate()
@@ -169,10 +167,11 @@ func (e *Entity) MakeDeathEffect() *sfx.SFX {
 
 }
 
+//Kill -- the method which safely kills this object and does so in a cool way
 func (e *Entity) Kill() {
 	//play a cool death scene.
 	//e.soundManager.Play("death0") -> should be moved into callback function
-	effect := e.MakeDeathEffect()
+	effect := e.makeDeathEffect()
 	e.world.SFXManager().PlayCustomEffect(effect, e.v)
 	e.world.DeleteGameObject(e)
 }
@@ -182,29 +181,30 @@ func (e *Entity) Move(direction int) bool {
 	nextPos := pixel.V(e.v.X, e.v.Y)
 	var moveAnimation string
 	switch direction {
-	case world.LEFT:
+	case enum.Direction.Left:
 		nextPos.X -= e.speed
 		moveAnimation = "MoveLeft"
-	case world.RIGHT:
+	case enum.Direction.Right:
 		nextPos.X += e.speed
 		moveAnimation = "MoveRight"
-	case world.DOWN:
+	case enum.Direction.Down:
 		nextPos.Y -= e.speed
 		moveAnimation = "MoveDown"
-	case world.UP:
+	case enum.Direction.Up:
 		nextPos.Y += e.speed
 		moveAnimation = "MoveUp"
 	}
 	e.direction = direction
-	if !e.world.Collides(e.Id(), nextPos, e.r) {
-		e.v = nextPos
-		return false
-	}
 	e.animationManager.Select(moveAnimation)
-	return true
+	if !e.world.Collides(e.ID(), nextPos, e.r) {
+		e.v = nextPos
+		return true
+	}
+	return false
 }
 
-func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
+//HandleHit -- the method which handles hit events
+func (e *Entity) HandleHit(s world.GameObject, cb world.Callback) bool {
 	//am i near enough to be affected?
 	//draw a slightly bigger circle than the collision circle
 	//so that the hit box is reasonable
@@ -217,13 +217,13 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 
 		var relativeDir int
 		if top && right {
-			relativeDir = world.UP
+			relativeDir = enum.Direction.Up
 		} else if top {
-			relativeDir = world.LEFT
+			relativeDir = enum.Direction.Left
 		} else if right {
-			relativeDir = world.RIGHT
+			relativeDir = enum.Direction.Right
 		} else {
-			relativeDir = world.DOWN
+			relativeDir = enum.Direction.Down
 		}
 		//is the source facing the right direction?
 		if relativeDir == s.Direction() {
@@ -232,13 +232,13 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 			am := e.animationManager
 			if isHit {
 				switch e.direction {
-				case world.LEFT:
+				case enum.Direction.Left:
 					am.Select("HitLeft")
-				case world.RIGHT:
+				case enum.Direction.Right:
 					am.Select("HitRight")
-				case world.DOWN:
+				case enum.Direction.Down:
 					am.Select("HitDown")
-				case world.UP:
+				case enum.Direction.Up:
 					am.Select("HitUp")
 				}
 				e.health -= s.Damage()
@@ -253,28 +253,30 @@ func (e *Entity) HandleHit(s world.GameObject, cb world.Fn_Callback) bool {
 	return false
 }
 
-//shitty copy paste
+//Attack -- the method for attacking in a given direction
 func (e *Entity) Attack(direction int) {
 	e.direction = direction
 	switch direction {
-	case world.LEFT:
+	case enum.Direction.Left:
 		e.animationManager.Select("AttackLeft")
-	case world.RIGHT:
+	case enum.Direction.Right:
 		e.animationManager.Select("AttackRight")
-	case world.DOWN:
+	case enum.Direction.Down:
 		e.animationManager.Select("AttackDown")
-	case world.UP:
+	case enum.Direction.Up:
 		e.animationManager.Select("AttackUp")
 	}
 	cb := e.controller.AttackCallback
 	e.world.HitEvent(e, cb)
 }
 
+//Update -- the method that gets called by the main game loop
 func (e *Entity) Update(tick int) {
 	e.controller.Update(tick) //outsource all our work like the plebs we are
 	e.Draw(tick)
 }
 
+//Draw -- draws the entity onto the window target
 func (e *Entity) Draw(tick int) {
 	target := e.world.Window
 	sprite, animationFrame := e.animationManager.Next(tick)

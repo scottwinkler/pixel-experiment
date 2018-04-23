@@ -4,22 +4,24 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/scottwinkler/simple-rpg/enum"
 	"github.com/scottwinkler/simple-rpg/world"
 )
 
+//PlayerController -- controller for player
 type PlayerController struct {
 	entity *Entity
 }
 
-//simple constructor
-func NewPlayerController(entity *Entity) controller {
+//NewPlayerController -- constructor
+func NewPlayerController(entity *Entity) Controller {
 	return &PlayerController{
 		entity: entity,
 	}
 }
 
+//HitCallback -- impelmentation method
 func (c *PlayerController) HitCallback(source interface{}) bool {
 	var (
 		s  = source.(world.GameObject)
@@ -35,6 +37,7 @@ func (c *PlayerController) HitCallback(source interface{}) bool {
 	return true
 }
 
+//AttackCallback -- implementation method
 func (c *PlayerController) AttackCallback(source interface{}) {
 	var (
 		e  = c.entity
@@ -48,11 +51,11 @@ func (c *PlayerController) AttackCallback(source interface{}) {
 		)
 		//fmt.Printf("[DEBUG] -- material: %s", material)
 		switch material {
-		case world.MATERIAL_FLESH:
+		case enum.Material.Flesh:
 			sm.Play("humanattacking" + num)
-		case world.MATERIAL_METAL:
+		case enum.Material.Metal:
 			sm.Play("humanattacking"+num, "swordhitmetal")
-		case world.MATERIAL_WOOD:
+		case enum.Material.Wood:
 			sm.Play("humanattacking"+num, "swordhitwood")
 		}
 	} else {
@@ -60,35 +63,40 @@ func (c *PlayerController) AttackCallback(source interface{}) {
 	}
 }
 
-//implementation of controller interface
+//Update -- implementation of controller interface
 func (c *PlayerController) Update(tick int) {
 	var (
-		e       = c.entity
-		camPos  = e.v //position camera centered on player
-		camZoom = 1.0
-		am      = e.animationManager
+		e   = c.entity
+		p   = e.parent.(*Player)
+		am  = e.animationManager
+		win = e.world.Window
 	)
-	win := e.world.Window
-	cam := pixel.IM.Scaled(camPos, camZoom).Moved(win.Bounds().Center().Sub(camPos))
-	win.SetMatrix(cam)
 
 	if am.Ready() { //only listen to new events if the animation manager is ready to accept new input
 		if win.Pressed(pixelgl.KeyLeft) || win.Pressed(pixelgl.KeyA) {
-			e.Move(world.LEFT)
+			e.Move(enum.Direction.Left)
 		} else if win.Pressed(pixelgl.KeyRight) || win.Pressed(pixelgl.KeyD) {
-			e.Move(world.RIGHT)
+			e.Move(enum.Direction.Right)
 		} else if win.Pressed(pixelgl.KeyDown) || win.Pressed(pixelgl.KeyS) {
-			e.Move(world.DOWN)
+			e.Move(enum.Direction.Down)
 		} else if win.Pressed(pixelgl.KeyUp) || win.Pressed(pixelgl.KeyW) {
-			e.Move(world.UP)
+			e.Move(enum.Direction.Up)
 		} else if win.Pressed(pixelgl.MouseButtonLeft) {
 			//determine what quadrant relative to the player the mouse click happened
-			mouse := cam.Unproject(win.MousePosition())
+			mouse := p.Camera().Matrix.Unproject(win.MousePosition())
 			dir := world.RelativeDirection(mouse, e.v)
 			e.Attack(dir)
 		} else {
 			am.Select("Idle")
 		}
 	}
-	//e.Draw(tick)
+	//other mouse events
+	if win.Pressed(pixelgl.KeyI) {
+		p.guiManager.SetVisible(true)
+	}
+
+	//update camera
+	cam := p.Camera()
+	cam.SetV(e.v)
+	p.SetCamera(cam)
 }

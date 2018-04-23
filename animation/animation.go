@@ -8,38 +8,38 @@ import (
 	"golang.org/x/image/colornames"
 )
 
-//a helper struct for creating animations which have color masks unique for each frame
-type AnimationFrame struct {
+//Frame -- helper struct for creating animations which have color masks unique for each frame
+type Frame struct {
 	Frame  int
 	Matrix pixel.Matrix
 	Mask   pixel.RGBA
 }
 
-//constructor utility of AnimationFrame objects
-func NewAnimationFrame(frame int, matrix pixel.Matrix, mask pixel.RGBA) AnimationFrame {
-	return AnimationFrame{
+//NewFrame -- constructor utility of Frame objects
+func NewFrame(frame int, matrix pixel.Matrix, mask pixel.RGBA) Frame {
+	return Frame{
 		Frame:  frame,
 		Matrix: matrix,
 		Mask:   mask,
 	}
 }
 
-//properties for animation
+//Animation -- properties for animation
 type Animation struct {
-	name             string
-	spritesheet      *utility.Spritesheet
-	frames           []AnimationFrame
-	animationManager *AnimationManager
-	index            int
-	loop             bool
-	paused           bool
-	skippable        bool
-	frameRate        int
-	done             bool
+	name        string
+	spritesheet *utility.Spritesheet
+	frames      []Frame
+	manager     *Manager
+	index       int
+	loop        bool
+	paused      bool
+	skippable   bool
+	frameRate   int
+	done        bool
 }
 
-//constructor for animation
-func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []AnimationFrame, loop bool, skippable bool, smooth bool, frameRate int) *Animation {
+//NewAnimation -- constructor for animation
+func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []Frame, loop bool, skippable bool, smooth bool, frameRate int) *Animation {
 	if smooth {
 		//smooth animation by padding it with frames appended in reverse order
 		for i := len(frames) - 1; i > 0; i-- {
@@ -61,38 +61,37 @@ func NewAnimation(spritesheet *utility.Spritesheet, name string, frames []Animat
 	return &animation
 }
 
-//getter method for name
+//Name -- getter method for name
 func (a *Animation) Name() string {
 	return a.name
 }
 
-//getter method for index
+//Index -- etter method for index
 func (a *Animation) Index() int {
 	return a.index
 }
 
-//getter method for frameRate
+//FrameRate -- getter method for frameRate
 func (a *Animation) FrameRate() int {
 	return a.frameRate
 }
 
-//getter method for spritesheet
+//Spritesheet -- getter method for spritesheet
 func (a *Animation) Spritesheet() *utility.Spritesheet {
 	return a.spritesheet
 }
 
-//setter method for animationManager
-func (a *Animation) SetAnimationManager(animationManager *AnimationManager) {
-	a.animationManager = animationManager
+//SetManager -- setter method for manager
+func (a *Animation) SetManager(manager *Manager) {
+	a.manager = manager
 }
 
-//setter method for paused
+//SetPaused -- setter method for paused
 func (a *Animation) SetPaused(paused bool) {
 	a.paused = paused
 }
 
-//utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
-
+//MappingToAnimations -- utility function for converting a spritesheet based on a mapping of name:frames to an array of animations
 //idea: instead of passing the spritesheet explicitly, if the mapping contains a reference to the path of the spritesheet,
 //then we can do this automatically
 func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]interface{}) []*Animation {
@@ -110,7 +109,7 @@ func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]in
 			mask = utility.ToRGBA(color, alpha)
 		}
 		framesArr := attributes["Frames"].([]interface{})
-		var animationFrames []AnimationFrame
+		var animationFrames []Frame
 		for _, value := range framesArr {
 			matrix := spritesheet.Matrix()
 			frame := value.(float64)
@@ -120,7 +119,7 @@ func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]in
 				matrix = matrix.Chained(pixel.IM.Rotated(pixel.ZV, -math.Pi).ScaledXY(pixel.ZV, pixel.V(-1, 1)).Rotated(pixel.ZV, math.Pi))
 			}
 			//assume that we do not use a custom matrix or color for effects created from spritesheets (maybe a bad guess?)
-			animationFrames = append(animationFrames, NewAnimationFrame(int(frame), matrix, mask))
+			animationFrames = append(animationFrames, NewFrame(int(frame), matrix, mask))
 		}
 
 		loop := attributes["Loop"].(bool)
@@ -133,20 +132,20 @@ func MappingToAnimations(spritesheet *utility.Spritesheet, mapping map[string]in
 	return animations
 }
 
-//resets animation to initial state
+//Reset -- resets animation to initial state
 func (a *Animation) Reset() {
 	a.done = false
 	a.index = 0
 }
 
-//returns current frame data. ready only, does not have side effects
-func (a *Animation) Current() (*pixel.Sprite, AnimationFrame) {
+//Current -- returns current frame data. ready only, does not have side effects
+func (a *Animation) Current() (*pixel.Sprite, Frame) {
 	frame := a.frames[a.index].Frame
 	return a.spritesheet.Sprites()[frame], a.frames[a.index]
 }
 
-//returns the next sprite and frame data. should be invoked on every update.
-func (a *Animation) Next(tick int) (*pixel.Sprite, AnimationFrame) {
+//Next -- returns the next sprite and frame data. should be invoked on every update.
+func (a *Animation) Next(tick int) (*pixel.Sprite, Frame) {
 	if !a.paused && tick%(60/a.frameRate) == 0 {
 		a.index++
 		if a.index > len(a.frames)-1 {

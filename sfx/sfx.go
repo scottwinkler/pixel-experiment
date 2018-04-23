@@ -8,34 +8,37 @@ import (
 	"github.com/scottwinkler/simple-rpg/utility"
 )
 
-//an SFX is a simplified animation that only needs to be run once and is not tied to a gameobject
+//SFX -- an SFX is a simplified animation that only needs to be run once and is not tied to a gameobject
 type SFX struct {
 	id          string
 	spritesheet *utility.Spritesheet
 	v           pixel.Vec
 	done        bool
 	name        string
-	sfxManager  *SFXManager
+	manager     *Manager
 	index       int
 	smooth      bool
 	frameRate   int
-	frames      []SFXFrame
+	frames      []Frame
 }
 
-func (s *SFX) Id() string {
+//ID -- getter function for ID
+func (s *SFX) ID() string {
 	return s.id
 }
 
+//SetV -- getter function for V
 func (s *SFX) SetV(v pixel.Vec) {
 	s.v = v
 }
 
+//MappingToSFX -- helper function for creating sfx from config files
 func MappingToSFX(spritesheet *utility.Spritesheet, mapping map[string]interface{}) []*SFX {
 	var effects []*SFX
 	for name, value := range mapping {
 		attributes := value.(map[string]interface{})
 		framesArr := attributes["Frames"].([]interface{})
-		var sfxFrames []SFXFrame
+		var sfxFrames []Frame
 		for _, value := range framesArr {
 			matrix := spritesheet.Matrix()
 			frame := value.(float64)
@@ -45,7 +48,7 @@ func MappingToSFX(spritesheet *utility.Spritesheet, mapping map[string]interface
 				matrix = matrix.Chained(pixel.IM.Rotated(pixel.ZV, -math.Pi).ScaledXY(pixel.ZV, pixel.V(-1, 1)).Rotated(pixel.ZV, math.Pi))
 			}
 			//assume that we do not use a custom matrix or color for effects created from spritesheets (maybe a bad guess?)
-			sfxFrames = append(sfxFrames, NewSFXFrame(int(frame), matrix, pixel.Alpha(1)))
+			sfxFrames = append(sfxFrames, NewFrame(int(frame), matrix, pixel.Alpha(1)))
 		}
 		smooth := attributes["Smooth"].(bool)
 		frameRate := int(attributes["FrameRate"].(float64)) //cast to int because ain't dealing with floating point nonsense
@@ -54,23 +57,24 @@ func MappingToSFX(spritesheet *utility.Spritesheet, mapping map[string]interface
 	return effects
 }
 
-//a helper struct for creating effects which have colored masks or which use an adjusted matrix
-type SFXFrame struct {
+//Frame -- a helper struct for creating effects which have colored masks or which use an adjusted matrix
+type Frame struct {
 	Frame  int
 	Matrix pixel.Matrix
 	Mask   pixel.RGBA
 }
 
-//constructor utility of SFXFrame objects
-func NewSFXFrame(frame int, matrix pixel.Matrix, mask pixel.RGBA) SFXFrame {
-	return SFXFrame{
+//NewFrame -- constructor utility of Frame objects
+func NewFrame(frame int, matrix pixel.Matrix, mask pixel.RGBA) Frame {
+	return Frame{
 		Frame:  frame,
 		Matrix: matrix,
 		Mask:   mask,
 	}
 }
 
-func NewSFX(spritesheet *utility.Spritesheet, name string, frames []SFXFrame, smooth bool, frameRate int) *SFX {
+//NewSFX -- constructor for SFX objects
+func NewSFX(spritesheet *utility.Spritesheet, name string, frames []Frame, smooth bool, frameRate int) *SFX {
 	if smooth {
 		//smooth sfx by padding it with frames appended in reverse order
 		for i := len(frames) - 1; i > 0; i-- {
@@ -90,19 +94,20 @@ func NewSFX(spritesheet *utility.Spritesheet, name string, frames []SFXFrame, sm
 	return &sfx
 }
 
-//factory method to deep clones the properties from a reference effect
+//Clone -- factory method to deep clones the properties from a reference effect
 func (s *SFX) Clone() *SFX {
 	effect := NewSFX(s.spritesheet, s.name, s.frames, s.smooth, s.frameRate)
-	effect.sfxManager = s.sfxManager
+	effect.manager = s.manager
 	return effect
 }
 
-func (s *SFX) Next(tick int) (*pixel.Sprite, SFXFrame) {
+//Next -- fetches the next animation or else kills this effect
+func (s *SFX) Next(tick int) (*pixel.Sprite, Frame) {
 	if tick%(60/s.frameRate) == 0 {
 		s.index++
 		if s.index >= len(s.frames)-1 {
 			//kill self
-			s.sfxManager.killEffect(s.id)
+			s.manager.killEffect(s.id)
 			s.done = true
 		}
 	}

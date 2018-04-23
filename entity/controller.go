@@ -10,12 +10,12 @@ var (
 	}
 )
 
-//the interface which all controllers must implement
-type controller interface {
+//Controller -- the interface which all controllers must implement
+type Controller interface {
 	Update(int)
 	HitCallback(interface{}) bool
 	AttackCallback(interface{})
 }
 
-//ai constructor takes an entity and returns an instance of a controller interface
-type Constructor func(*Entity) controller
+//Constructor takes an entity and returns an instance of a controller interface
+type Constructor func(*Entity) Controller

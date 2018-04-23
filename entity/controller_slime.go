@@ -3,20 +3,24 @@ package entity
 import (
 	"math/rand"
 
+	"github.com/scottwinkler/simple-rpg/enum"
+
 	"github.com/scottwinkler/simple-rpg/world"
 )
 
+//SlimeController -- controller for slimes (and possibly other shit)
 type SlimeController struct {
 	entity *Entity
 }
 
-//simple constructor
-func NewSlimeController(entity *Entity) controller {
+//NewSlimeController -- simple constructor
+func NewSlimeController(entity *Entity) Controller {
 	return &SlimeController{
 		entity: entity,
 	}
 }
 
+//HitCallback -- implementation method
 func (c *SlimeController) HitCallback(source interface{}) bool {
 	var (
 		s  = source.(world.GameObject)
@@ -32,11 +36,12 @@ func (c *SlimeController) HitCallback(source interface{}) bool {
 	return true
 }
 
+//AttackCallback -- implementation method
 func (c *SlimeController) AttackCallback(interface{}) {
 	//do nothing
 }
 
-//implementation of controller interface
+//Update -- implementation of controller interface
 func (c *SlimeController) Update(tick int) {
 	var (
 		e  = c.entity
@@ -77,20 +82,20 @@ func (c *SlimeController) Update(tick int) {
 					//add some randomness in the choice of direction to choose with a coin toss
 					heads := rand.Intn(2) == 0
 					//try moving in the obvious direction first
-					moveSuccess := e.Move(dir)
-					if !moveSuccess {
+					success := e.Move(dir)
+					if !success {
 						switch dir {
-						case world.DOWN, world.UP:
+						case enum.Direction.Down, enum.Direction.Up:
 							if heads {
-								e.Move(world.LEFT)
+								e.Move(enum.Direction.Left)
 							} else {
-								e.Move(world.RIGHT)
+								e.Move(enum.Direction.Right)
 							}
-						case world.RIGHT, world.LEFT:
+						case enum.Direction.Right, enum.Direction.Left:
 							if heads {
-								e.Move(world.UP)
+								e.Move(enum.Direction.Up)
 							} else {
-								e.Move(world.DOWN)
+								e.Move(enum.Direction.Down)
 							}
 						}
 					}
@@ -101,5 +106,4 @@ func (c *SlimeController) Update(tick int) {
 			}
 		}
 	}
-	//e.Draw(tick)
 }

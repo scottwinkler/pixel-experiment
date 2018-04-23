@@ -6,21 +6,22 @@ import (
 	"github.com/faiface/pixel"
 )
 
+//Spawner -- container for spawner objects
 type Spawner struct {
-	entity        *Entity     //the spawner itself
-	spawnLocation pixel.Rect  //where the creatures are spawned
-	spawnData     *EntityData //the kind of creature it spawns
+	entity        *Entity    //the spawner itself
+	spawnLocation pixel.Rect //where the creatures are spawned
+	spawnData     *Data      //the kind of creature it spawns
 }
 
-//constructor for spawner
-func NewSpawner(config *EntityConfiguration, spawnData *EntityData) *Spawner {
-	entity := NewEntity(config)
-	spawner := &Spawner{
-		entity:        entity,
-		spawnData:     spawnData,
-		spawnLocation: pixel.R(entity.v.X-30, entity.v.Y-80, entity.v.X+30, entity.v.Y-50), //where the creatures are spawned
-	}
+//NewSpawner -- constructor for spawner
+func NewSpawner(config *Configuration, spawnData *Data) *Spawner {
 
+	spawner := &Spawner{
+		spawnData: spawnData,
+	}
+	entity := NewEntity(config, spawner)
+	spawner.entity = entity
+	spawner.spawnLocation = pixel.R(entity.v.X-30, entity.v.Y-80, entity.v.X+30, entity.v.Y-50) //where the creatures are spawned
 	//create monsters for as long as the spawner is alive
 	go func() {
 		for {
@@ -56,16 +57,17 @@ func (s *Spawner) getSpawnPosition() (pixel.Vec, bool) {
 	return spawnPos, false
 }
 
+//Spawn the method used to spawn new creatures
 func (s *Spawner) Spawn() {
 	spawnPos, success := s.getSpawnPosition()
 	if !success {
 		return
 	}
 	//create a new entity at the spawner location
-	config := &EntityConfiguration{
+	config := &Configuration{
 		V:    spawnPos, //spawn nearby
 		W:    s.entity.world,
 		Data: s.spawnData,
 	}
-	NewEntity(config)
+	NewEntity(config, nil)
 }

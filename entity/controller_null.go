@@ -2,18 +2,19 @@ package entity
 
 import "github.com/scottwinkler/simple-rpg/world"
 
+//NullController -- a controller that does the bare minimum. What a free loader.
 type NullController struct {
 	entity *Entity
 }
 
-//simple constructor
-func NewNullController(entity *Entity) controller {
+//NewNullController -- simple constructor
+func NewNullController(entity *Entity) Controller {
 	return &NullController{
 		entity: entity,
 	}
 }
 
-//implementation of controller interface
+//HitCallback -- implementation of controller interface
 func (c *NullController) HitCallback(source interface{}) bool {
 	var (
 		s  = source.(world.GameObject)
@@ -29,12 +30,12 @@ func (c *NullController) HitCallback(source interface{}) bool {
 	return true
 }
 
-//implementation of controller interface
+//AttackCallback -- implementation of controller interface
 func (c *NullController) AttackCallback(s interface{}) {
 	//do nothing
 }
 
-//implementation of controller interface
+//Update -- implementation of controller interface
 func (c *NullController) Update(tick int) {
 	var (
 		e  = c.entity
@@ -43,5 +44,4 @@ func (c *NullController) Update(tick int) {
 	if am.Ready() {
 		am.Select("Idle")
 	}
-	//e.Draw(tick)
 }
