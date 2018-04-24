@@ -13,7 +13,8 @@ import (
 )
 
 //Panel the struct that acts as a container for all other widgets
-type Panel struct {
+type Panel struct { //panel should be a special kind of widget that holds other widgets
+	//widget  Widget
 	height  float64
 	width   float64
 	v       pixel.Vec
@@ -36,7 +37,7 @@ func NewPanel(height float64, width float64, v pixel.Vec, player world.Player) *
 	//register widgets with panel, then add to panel
 	pic, _ := utility.LoadPicture("_assets/ui/close_normal.png")
 	sprite := pixel.NewSprite(pic, pic.Bounds())
-	buttonMatrix := pixel.IM.Scaled(pixel.ZV, 0.05).Moved(pixel.V(95, 95))
+	buttonMatrix := pixel.IM.Scaled(pixel.ZV, 0.05).Moved(pixel.V(165, 165))
 	var testWidgets []Widget
 	testButton := NewButton(panel, sprite, buttonMatrix)
 	testWidgets = append(testWidgets, testButton)
